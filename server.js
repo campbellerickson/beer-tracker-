@@ -150,8 +150,13 @@ app.post('/api/register', async (req, res) => {
     const userId = uuidv4();
     const sessionToken = uuidv4();
 
-    const isAdmin = await db.useInvite(inviteCode, userId);
+    // Get admin status before using invite
+    const invite = await db.getInvite(inviteCode);
+    const isAdmin = invite?.is_admin || false;
+
+    // Create user first, then mark invite as used
     await db.createUser(userId, username, password, isAdmin);
+    await db.useInvite(inviteCode, userId);
     await db.createSession(sessionToken, userId);
 
     res.cookie('session', sessionToken, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
