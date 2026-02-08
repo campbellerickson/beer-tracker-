@@ -15,6 +15,27 @@
 </head>
 <body>
   <div id="app">
+    <!-- Countdown Overlay -->
+    <div id="countdown-overlay" class="countdown-overlay hidden">
+      <h1 class="countdown-title">MILLION BEER CHALLENGE</h1>
+      <p class="countdown-subtitle">LAUNCHES IN</p>
+      <div class="countdown-timer">
+        <div class="countdown-unit">
+          <div class="countdown-value" id="countdown-hours">00</div>
+          <div class="countdown-label">HOURS</div>
+        </div>
+        <div class="countdown-unit">
+          <div class="countdown-value" id="countdown-minutes">00</div>
+          <div class="countdown-label">MINS</div>
+        </div>
+        <div class="countdown-unit">
+          <div class="countdown-value" id="countdown-seconds">00</div>
+          <div class="countdown-label">SECS</div>
+        </div>
+      </div>
+      <p class="countdown-goal">GOAL: 1,000,000 BEERS</p>
+    </div>
+
     <!-- Auth Screen -->
     <div id="auth-screen" class="screen">
       <div class="auth-container">
@@ -65,8 +86,10 @@
     <!-- Dashboard Screen -->
     <div id="dashboard-screen" class="screen hidden">
       <header class="dashboard-header">
-        <div class="team-info">
-          <span class="player-icon">&#127866;</span>
+        <div class="team-info" onclick="showEditProfile()">
+          <div id="header-profile-photo" class="header-profile-photo">
+            <span>&#127866;</span>
+          </div>
           <span id="player-name">PLAYER</span>
           <span id="admin-badge" class="admin-badge hidden">ADMIN</span>
         </div>
@@ -165,6 +188,66 @@
           <p class="reset-warning">This will reset ALL beer counts to 0 and delete all drink history. This cannot be undone!</p>
           <button onclick="confirmReset()" class="btn-danger">YES, RESET EVERYTHING</button>
           <button onclick="closeResetModal()" class="btn-secondary">CANCEL</button>
+        </div>
+      </div>
+
+      <!-- Profile Setup Modal (shown after first login) -->
+      <div id="profile-setup-modal" class="modal hidden">
+        <div class="modal-content profile-modal">
+          <h3>COMPLETE YOUR PROFILE</h3>
+          <p>Tell us about yourself!</p>
+          <div class="profile-photo-upload">
+            <div id="setup-photo-preview" class="profile-photo-circle">
+              <span>+</span>
+            </div>
+            <label for="setup-photo-input" class="photo-upload-label">Upload Photo</label>
+            <input type="file" id="setup-photo-input" accept="image/*" onchange="handleProfilePhotoSelect(this, 'setup')">
+          </div>
+          <textarea id="setup-beer-fact" placeholder="YOUR FAVORITE BEER FACT..." maxlength="200"></textarea>
+          <button onclick="saveProfileSetup()" class="btn-primary">SAVE PROFILE</button>
+        </div>
+      </div>
+
+      <!-- View Profile Modal -->
+      <div id="view-profile-modal" class="modal hidden">
+        <div class="modal-content profile-modal">
+          <div id="profile-photo-display" class="profile-photo-circle large">
+            <span>?</span>
+          </div>
+          <h3 id="profile-username">USERNAME</h3>
+          <div id="profile-admin-tag" class="profile-admin-tag hidden">ADMIN</div>
+          <div class="profile-stats">
+            <div class="profile-stat">
+              <span class="stat-value" id="profile-beers">0</span>
+              <span class="stat-label">BEERS</span>
+            </div>
+            <div class="profile-stat">
+              <span class="stat-value" id="profile-since">-</span>
+              <span class="stat-label">MEMBER SINCE</span>
+            </div>
+          </div>
+          <div class="profile-fact-section">
+            <h4>BEER FACT</h4>
+            <p id="profile-fact">No beer fact yet!</p>
+          </div>
+          <button onclick="closeProfileModal()" class="btn-secondary">CLOSE</button>
+        </div>
+      </div>
+
+      <!-- Edit Profile Modal -->
+      <div id="edit-profile-modal" class="modal hidden">
+        <div class="modal-content profile-modal">
+          <h3>EDIT PROFILE</h3>
+          <div class="profile-photo-upload">
+            <div id="edit-photo-preview" class="profile-photo-circle">
+              <span>+</span>
+            </div>
+            <label for="edit-photo-input" class="photo-upload-label">Change Photo</label>
+            <input type="file" id="edit-photo-input" accept="image/*" onchange="handleProfilePhotoSelect(this, 'edit')">
+          </div>
+          <textarea id="edit-beer-fact" placeholder="YOUR FAVORITE BEER FACT..." maxlength="200"></textarea>
+          <button onclick="saveProfileEdit()" class="btn-primary">SAVE CHANGES</button>
+          <button onclick="closeEditProfileModal()" class="btn-secondary">CANCEL</button>
         </div>
       </div>
     </div>

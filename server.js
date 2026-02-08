@@ -289,8 +289,58 @@ app.post('/api/reset-password', async (req, res) => {
 });
 
 // Get current user
-app.get('/api/me', authenticate, (req, res) => {
-  res.json({ user: req.user });
+app.get('/api/me', authenticate, async (req, res) => {
+  try {
+    const user = await db.getUser(req.user.id);
+    res.json({
+      user: {
+        id: user.id,
+        username: user.display_name || user.email.split('@')[0],
+        beer_count: user.beer_count,
+        beer_fact: user.beer_fact,
+        profile_photo: user.profile_photo,
+        is_admin: user.is_admin || false,
+        needs_profile: !user.beer_fact // Flag if they need to complete profile
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get user' });
+  }
+});
+
+// Get public profile by display name
+app.get('/api/profile/:name', async (req, res) => {
+  try {
+    const profile = await db.getPublicProfile(req.params.name);
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+    res.json({
+      profile: {
+        username: profile.display_name,
+        beer_count: profile.beer_count,
+        beer_fact: profile.beer_fact,
+        profile_photo: profile.profile_photo,
+        is_admin: profile.is_admin,
+        member_since: profile.created_at
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get profile' });
+  }
+});
+
+// Update own profile
+app.post('/api/profile', authenticate, async (req, res) => {
+  const { beerFact, profilePhoto } = req.body;
+
+  try {
+    await db.updateProfile(req.user.id, { beerFact, profilePhoto });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Profile update error:', err);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
 });
 
 // Record a beer with type and photo verification

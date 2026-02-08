@@ -165,6 +165,30 @@ module.exports = {
     await pool.query('DELETE FROM sessions WHERE token = $1', [token]);
   },
 
+  // Profile functions
+  async getPublicProfile(displayName) {
+    const result = await pool.query(
+      'SELECT display_name, beer_count, beer_fact, profile_photo, is_admin, created_at FROM users WHERE LOWER(display_name) = LOWER($1)',
+      [displayName]
+    );
+    return result.rows[0] || null;
+  },
+
+  async updateProfile(userId, updates) {
+    const { beerFact, profilePhoto } = updates;
+    await pool.query(
+      'UPDATE users SET beer_fact = COALESCE($1, beer_fact), profile_photo = COALESCE($2, profile_photo) WHERE id = $3',
+      [beerFact, profilePhoto, userId]
+    );
+  },
+
+  async getAllProfiles() {
+    const result = await pool.query(
+      'SELECT display_name, beer_count, beer_fact, profile_photo, is_admin FROM users ORDER BY beer_count DESC'
+    );
+    return result.rows;
+  },
+
   // Admin functions
   async resetAllProgress() {
     const client = await pool.connect();

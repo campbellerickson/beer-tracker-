@@ -1,5 +1,69 @@
 // State
 let currentUser = null;
+let countdownInterval = null;
+
+// Launch date: Midnight PT tonight (or next midnight if already past)
+function getLaunchTime() {
+  // Get current time in PT
+  const now = new Date();
+  const ptOptions = { timeZone: 'America/Los_Angeles' };
+  const ptString = now.toLocaleString('en-US', ptOptions);
+  const ptNow = new Date(ptString);
+
+  // Set to midnight PT tonight
+  const launch = new Date(ptString);
+  launch.setHours(24, 0, 0, 0); // Next midnight
+
+  // Convert back to UTC for comparison
+  const launchUTC = new Date(launch.toLocaleString('en-US', { timeZone: 'UTC' }));
+
+  // Adjust for PT offset (roughly -8 hours, but this handles DST)
+  const ptOffset = now.getTime() - new Date(ptString).getTime();
+  return new Date(launch.getTime() + ptOffset);
+}
+
+// Hardcoded launch: February 8, 2026 at 12:00 AM PT (midnight)
+const LAUNCH_DATE = new Date('2026-02-08T08:00:00.000Z'); // Midnight PT = 8 AM UTC
+
+function checkCountdown() {
+  const now = new Date();
+  const timeLeft = LAUNCH_DATE - now;
+
+  if (timeLeft <= 0) {
+    // Launch time has passed - hide countdown, show app
+    document.getElementById('countdown-overlay').classList.add('hidden');
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+    return false; // Not in countdown
+  }
+
+  // Show countdown
+  document.getElementById('countdown-overlay').classList.remove('hidden');
+
+  const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+  document.getElementById('countdown-hours').textContent = hours.toString().padStart(2, '0');
+  document.getElementById('countdown-minutes').textContent = minutes.toString().padStart(2, '0');
+  document.getElementById('countdown-seconds').textContent = seconds.toString().padStart(2, '0');
+
+  return true; // In countdown
+}
+
+// Start countdown check
+function startCountdown() {
+  if (checkCountdown()) {
+    countdownInterval = setInterval(() => {
+      if (!checkCountdown()) {
+        // Countdown finished - reload to show the app
+        window.location.reload();
+      }
+    }, 1000);
+  }
+}
 
 // DOM Elements
 const authScreen = document.getElementById('auth-screen');
@@ -10,6 +74,9 @@ const authError = document.getElementById('auth-error');
 
 // Check for invite code in URL
 window.addEventListener('load', async () => {
+  // Check if we're still in countdown mode
+  startCountdown();
+
   const params = new URLSearchParams(window.location.search);
   const inviteCode = params.get('invite');
   const referrer = params.get('ref');
@@ -249,7 +316,13 @@ function showDashboard() {
     resetBtn.classList.add('hidden');
   }
 
+  updateHeaderPhoto();
   loadStats();
+
+  // Check if user needs to complete profile
+  if (currentUser.needs_profile) {
+    setTimeout(showProfileSetup, 500);
+  }
 }
 
 function updateCounter(total) {
@@ -322,7 +395,7 @@ async function loadStats() {
       return `
         <div class="leaderboard-row" style="${isYou ? 'background: rgba(255, 107, 0, 0.2);' : ''}">
           <div class="leaderboard-rank ${rankClass}">#${i + 1}</div>
-          <div class="leaderboard-name">${player.username.toUpperCase()}${adminTag}${isYou ? ' (YOU)' : ''}</div>
+          <div class="leaderboard-name" onclick="viewProfile('${player.username}')">${player.username.toUpperCase()}${adminTag}${isYou ? ' (YOU)' : ''}</div>
           <div class="leaderboard-score">${player.beer_count.toLocaleString()}</div>
         </div>
       `;
@@ -495,6 +568,168 @@ document.getElementById('reg-password').addEventListener('keypress', (e) => {
 document.getElementById('beer-type').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') drinkBeer();
 });
+
+// Profile Functions
+let pendingProfilePhoto = null;
+
+function handleProfilePhotoSelect(input, mode) {
+  const file = input.files[0];
+  if (file) {
+    // Resize image before storing
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const size = 200; // Resize to 200x200
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        // Center crop
+        const minDim = Math.min(img.width, img.height);
+        const sx = (img.width - minDim) / 2;
+        const sy = (img.height - minDim) / 2;
+
+        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+        pendingProfilePhoto = canvas.toDataURL('image/jpeg', 0.8);
+
+        const preview = document.getElementById(mode + '-photo-preview');
+        preview.innerHTML = `<img src="${pendingProfilePhoto}" alt="Profile">`;
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function showProfileSetup() {
+  pendingProfilePhoto = null;
+  document.getElementById('setup-beer-fact').value = '';
+  document.getElementById('setup-photo-preview').innerHTML = '<span>+</span>';
+  document.getElementById('profile-setup-modal').classList.remove('hidden');
+}
+
+async function saveProfileSetup() {
+  const beerFact = document.getElementById('setup-beer-fact').value.trim();
+
+  if (!beerFact) {
+    alert('Please enter a beer fact!');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ beerFact, profilePhoto: pendingProfilePhoto })
+    });
+
+    if (res.ok) {
+      currentUser.beer_fact = beerFact;
+      currentUser.profile_photo = pendingProfilePhoto;
+      currentUser.needs_profile = false;
+      updateHeaderPhoto();
+      document.getElementById('profile-setup-modal').classList.add('hidden');
+    } else {
+      alert('Failed to save profile');
+    }
+  } catch (err) {
+    alert('Failed to save profile');
+  }
+}
+
+function showEditProfile() {
+  pendingProfilePhoto = currentUser.profile_photo || null;
+  document.getElementById('edit-beer-fact').value = currentUser.beer_fact || '';
+
+  const preview = document.getElementById('edit-photo-preview');
+  if (currentUser.profile_photo) {
+    preview.innerHTML = `<img src="${currentUser.profile_photo}" alt="Profile">`;
+  } else {
+    preview.innerHTML = '<span>+</span>';
+  }
+
+  document.getElementById('edit-profile-modal').classList.remove('hidden');
+}
+
+function closeEditProfileModal() {
+  document.getElementById('edit-profile-modal').classList.add('hidden');
+}
+
+async function saveProfileEdit() {
+  const beerFact = document.getElementById('edit-beer-fact').value.trim();
+
+  try {
+    const res = await fetch('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ beerFact: beerFact || null, profilePhoto: pendingProfilePhoto })
+    });
+
+    if (res.ok) {
+      currentUser.beer_fact = beerFact;
+      if (pendingProfilePhoto) currentUser.profile_photo = pendingProfilePhoto;
+      updateHeaderPhoto();
+      closeEditProfileModal();
+    } else {
+      alert('Failed to save profile');
+    }
+  } catch (err) {
+    alert('Failed to save profile');
+  }
+}
+
+async function viewProfile(username) {
+  try {
+    const res = await fetch('/api/profile/' + encodeURIComponent(username));
+    const data = await res.json();
+
+    if (res.ok) {
+      const profile = data.profile;
+
+      // Update modal content
+      document.getElementById('profile-username').textContent = profile.username.toUpperCase();
+      document.getElementById('profile-beers').textContent = profile.beer_count.toLocaleString();
+      document.getElementById('profile-fact').textContent = profile.beer_fact || 'No beer fact yet!';
+
+      const photoDisplay = document.getElementById('profile-photo-display');
+      if (profile.profile_photo) {
+        photoDisplay.innerHTML = `<img src="${profile.profile_photo}" alt="${profile.username}">`;
+      } else {
+        photoDisplay.innerHTML = '<span>&#127866;</span>';
+      }
+
+      const adminTag = document.getElementById('profile-admin-tag');
+      if (profile.is_admin) {
+        adminTag.classList.remove('hidden');
+      } else {
+        adminTag.classList.add('hidden');
+      }
+
+      // Format member since date
+      const memberSince = new Date(profile.member_since);
+      document.getElementById('profile-since').textContent = memberSince.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+      document.getElementById('view-profile-modal').classList.remove('hidden');
+    }
+  } catch (err) {
+    console.error('Failed to load profile', err);
+  }
+}
+
+function closeProfileModal() {
+  document.getElementById('view-profile-modal').classList.add('hidden');
+}
+
+function updateHeaderPhoto() {
+  const headerPhoto = document.getElementById('header-profile-photo');
+  if (currentUser.profile_photo) {
+    headerPhoto.innerHTML = `<img src="${currentUser.profile_photo}" alt="Profile">`;
+  } else {
+    headerPhoto.innerHTML = '<span>&#127866;</span>';
+  }
+}
 
 // Admin Reset Functions
 function showResetConfirm() {
