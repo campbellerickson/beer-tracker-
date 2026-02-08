@@ -324,8 +324,8 @@ async function drinkBeer() {
         loadStats();
         setTimeout(hideVerificationStatus, 3000);
       } else {
-        showVerificationStatus('failed', data.verificationMessage || 'NOT A BEER! NICE TRY.');
-        setTimeout(hideVerificationStatus, 5000);
+        showVerificationStatus('failed', 'REJECTED: ' + (data.verificationMessage || 'Not a valid beer photo!'));
+        setTimeout(hideVerificationStatus, 6000);
       }
     } else {
       showVerificationStatus('failed', data.error || 'Failed to verify');

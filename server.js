@@ -38,9 +38,12 @@ APPROVE only if:
 - You can clearly see a cocktail or mixed drink
 - It's obviously an alcoholic beverage
 
-Respond with JSON: {"isBeer": true/false, "message": "short snarky comment"}
+Respond with JSON: {"isBeer": true/false, "message": "your response"}
 
-If rejecting, be funny but firm. Examples: "Nice try, that's a lamp." or "That's your cat, not a cat-bernet." or "I see pixels, not pilsners."`
+IMPORTANT: Your message MUST explain what you actually see in the photo.
+- If APPROVING: Give a short fun comment like "Cheers! That IPA looks refreshing."
+- If REJECTING: State what you see and why it's not a beer. Be snarky but informative.
+  Examples: "That's a desk lamp, not a lager." or "I see your cat, but cats aren't cocktails." or "This is a blurry mess - show me an actual drink!" or "Nice ceiling fan, but I need to see a beer."`
         },
         {
           role: 'user',
