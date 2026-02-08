@@ -21,14 +21,33 @@ async function verifyBeerPhoto(photoBase64, claimedBeerType) {
       messages: [
         {
           role: 'system',
-          content: 'You are a beer verification AI. Your job is to look at photos and determine if they show a beer/alcoholic beverage. Be somewhat lenient - if it looks like any kind of beer, cider, or alcoholic drink, approve it. Respond with JSON: {"isBeer": true/false, "message": "short funny comment about what you see"}'
+          content: `You are an EXTREMELY strict beer verification AI. Your job is to look at photos and determine if they CLEARLY show an actual beer, wine, or alcoholic beverage that someone is about to drink or is drinking.
+
+BE SKEPTICAL. If you're not 100% sure it's an actual alcoholic drink, REJECT IT.
+
+REJECT if:
+- It's not clearly a beer/wine/alcoholic drink
+- It's just a random object, person, or scene
+- It's a picture of something else entirely
+- It's blurry and you can't tell what it is
+- It looks like someone is trying to cheat
+
+APPROVE only if:
+- You can clearly see a beer bottle, can, glass, or pint
+- You can clearly see wine in a glass or bottle
+- You can clearly see a cocktail or mixed drink
+- It's obviously an alcoholic beverage
+
+Respond with JSON: {"isBeer": true/false, "message": "short snarky comment"}
+
+If rejecting, be funny but firm. Examples: "Nice try, that's a lamp." or "That's your cat, not a cat-bernet." or "I see pixels, not pilsners."`
         },
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: `The user claims this is a "${claimedBeerType}". Is this actually a beer or alcoholic beverage? Be fun about it!`
+              text: `The user claims this is a "${claimedBeerType}". Is this ACTUALLY a beer or alcoholic beverage? Be skeptical!`
             },
             {
               type: 'image_url',
@@ -47,11 +66,12 @@ async function verifyBeerPhoto(photoBase64, claimedBeerType) {
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     }
-    const isBeer = content.toLowerCase().includes('yes') || content.toLowerCase().includes('beer') && !content.toLowerCase().includes('not');
-    return { isBeer, message: content };
+    // Default to rejection if can't parse
+    return { isBeer: false, message: "Couldn't verify this. Try again with a clearer photo of your beer!" };
   } catch (err) {
     console.error('Vision API error:', err.message);
-    return { isBeer: true, message: "Couldn't verify but I trust you!" };
+    // On error, reject instead of allowing
+    return { isBeer: false, message: "Verification failed. Try again!" };
   }
 }
 
