@@ -390,32 +390,12 @@ body {
   font-family: 'Roboto Mono', monospace;
 }
 
-/* LED off segments effect */
-.digit::before {
-  content: '8';
-  position: absolute;
-  color: #1a0000;
-  z-index: 0;
-}
-
-.digit {
-  z-index: 1;
-}
-
-.digit:nth-child(2), .digit:nth-child(5) {
-  /* Add slight separator after millions and thousands */
-}
-
 .digit:nth-child(4), .digit:nth-child(8) {
   background: none;
   padding: 8px 2px;
   min-width: auto;
   color: #ff3333;
   text-shadow: 0 0 8px #ff3333;
-}
-
-.digit:nth-child(4)::before, .digit:nth-child(8)::before {
-  content: none;
 }
 
 .goal-tracker {
