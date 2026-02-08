@@ -738,16 +738,16 @@ document.getElementById('drunk-ai-input')?.addEventListener('keypress', (e) => {
 });
 
 // Allow Enter key to submit forms
-document.getElementById('login-password').addEventListener('keypress', (e) => {
+document.getElementById('login-password')?.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') login();
 });
 
-document.getElementById('reg-password').addEventListener('keypress', (e) => {
+document.getElementById('reg-password')?.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') register();
 });
 
 // Allow Enter key to submit beer
-document.getElementById('beer-type').addEventListener('keypress', (e) => {
+document.getElementById('beer-type')?.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') drinkBeer();
 });
 
