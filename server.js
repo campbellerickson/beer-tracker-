@@ -127,7 +127,8 @@ async function authenticate(req, res, next) {
 
     req.user = {
       id: user.id,
-      username: user.username,
+      email: user.email,
+      username: user.display_name || user.email.split('@')[0],
       beer_count: user.beer_count,
       is_admin: user.is_admin || false
     };
@@ -153,10 +154,16 @@ app.get('/api/invite/:code', async (req, res) => {
 
 // Register with invite code
 app.post('/api/register', async (req, res) => {
-  const { username, password, inviteCode } = req.body;
+  const { email, displayName, password, inviteCode } = req.body;
 
-  if (!username || !password || !inviteCode) {
+  if (!email || !displayName || !password || !inviteCode) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email format' });
   }
 
   try {
@@ -165,9 +172,9 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: 'Invalid or used invite code' });
     }
 
-    const existing = await db.getUserByUsername(username);
+    const existing = await db.getUserByEmail(email);
     if (existing) {
-      return res.status(400).json({ error: 'Username already taken' });
+      return res.status(400).json({ error: 'Email already registered' });
     }
 
     const userId = uuidv4();
@@ -178,12 +185,12 @@ app.post('/api/register', async (req, res) => {
     const isAdmin = invite?.is_admin || false;
 
     // Create user first, then mark invite as used
-    await db.createUser(userId, username, password, isAdmin);
+    await db.createUser(userId, email, displayName.trim(), password, isAdmin);
     await db.useInvite(inviteCode, userId);
     await db.createSession(sessionToken, userId);
 
     res.cookie('session', sessionToken, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
-    res.json({ success: true, user: { id: userId, username, beer_count: 0, is_admin: isAdmin } });
+    res.json({ success: true, user: { id: userId, username: displayName.trim(), beer_count: 0, is_admin: isAdmin } });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Registration failed' });
@@ -192,10 +199,10 @@ app.post('/api/register', async (req, res) => {
 
 // Login
 app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password } = req.body; // username is actually email
 
   try {
-    const user = await db.getUserByUsername(username);
+    const user = await db.getUserByEmail(username);
     if (!user || user.password !== password) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -206,7 +213,7 @@ app.post('/api/login', async (req, res) => {
     res.cookie('session', sessionToken, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
     res.json({
       success: true,
-      user: { id: user.id, username: user.username, beer_count: user.beer_count, is_admin: user.is_admin || false }
+      user: { id: user.id, username: user.display_name || user.email.split('@')[0], beer_count: user.beer_count, is_admin: user.is_admin || false }
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -222,6 +229,63 @@ app.post('/api/logout', async (req, res) => {
   }
   res.clearCookie('session');
   res.json({ success: true });
+});
+
+// Request password reset
+app.post('/api/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    const user = await db.getUserByEmail(email);
+    if (!user) {
+      // Don't reveal if email exists or not for security
+      return res.json({ success: true, message: 'If that email exists, a reset code has been generated' });
+    }
+
+    // Generate 6-digit reset code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    await db.createPasswordReset(email, code);
+
+    // In production, you'd send this via email. For now, log it.
+    console.log(`PASSWORD RESET CODE for ${email}: ${code}`);
+
+    res.json({ success: true, message: 'Reset code generated', code }); // Remove 'code' in production!
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ error: 'Failed to process request' });
+  }
+});
+
+// Reset password with code
+app.post('/api/reset-password', async (req, res) => {
+  const { code, newPassword } = req.body;
+
+  if (!code || !newPassword) {
+    return res.status(400).json({ error: 'Code and new password are required' });
+  }
+
+  if (newPassword.length < 4) {
+    return res.status(400).json({ error: 'Password must be at least 4 characters' });
+  }
+
+  try {
+    const reset = await db.getPasswordReset(code);
+    if (!reset) {
+      return res.status(400).json({ error: 'Invalid or expired reset code' });
+    }
+
+    await db.updatePassword(reset.email, newPassword);
+    await db.deletePasswordReset(code);
+
+    res.json({ success: true, message: 'Password has been reset' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
 });
 
 // Get current user

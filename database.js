@@ -9,26 +9,65 @@ module.exports = {
   // Users
   async getUser(id) {
     const result = await pool.query(
-      'SELECT id, username, password, beer_count, is_admin, created_at FROM users WHERE id = $1',
+      'SELECT id, email, display_name, password, beer_count, is_admin, created_at FROM users WHERE id = $1',
       [id]
     );
     return result.rows[0] || null;
   },
 
+  async getUserByEmail(email) {
+    const result = await pool.query(
+      'SELECT id, email, display_name, password, beer_count, is_admin, created_at FROM users WHERE LOWER(email) = LOWER($1)',
+      [email]
+    );
+    return result.rows[0] || null;
+  },
+
+  // Legacy support - also check email field
   async getUserByUsername(username) {
     const result = await pool.query(
-      'SELECT id, username, password, beer_count, is_admin, created_at FROM users WHERE username = $1',
+      'SELECT id, email, display_name, password, beer_count, is_admin, created_at FROM users WHERE LOWER(email) = LOWER($1)',
       [username]
     );
     return result.rows[0] || null;
   },
 
-  async createUser(id, username, password, isAdmin = false) {
+  async createUser(id, email, displayName, password, isAdmin = false) {
     const result = await pool.query(
-      'INSERT INTO users (id, username, password, is_admin) VALUES ($1, $2, $3, $4) RETURNING *',
-      [id, username, password, isAdmin]
+      'INSERT INTO users (id, email, display_name, password, is_admin) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [id, email, displayName, password, isAdmin]
     );
     return result.rows[0];
+  },
+
+  // Password Reset
+  async createPasswordReset(email, code) {
+    // Delete any existing reset codes for this email
+    await pool.query('DELETE FROM password_resets WHERE LOWER(email) = LOWER($1)', [email]);
+    // Create new reset code (expires in 1 hour)
+    await pool.query(
+      'INSERT INTO password_resets (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL \'1 hour\')',
+      [email, code]
+    );
+  },
+
+  async getPasswordReset(code) {
+    const result = await pool.query(
+      'SELECT * FROM password_resets WHERE code = $1 AND expires_at > NOW()',
+      [code]
+    );
+    return result.rows[0] || null;
+  },
+
+  async deletePasswordReset(code) {
+    await pool.query('DELETE FROM password_resets WHERE code = $1', [code]);
+  },
+
+  async updatePassword(email, newPassword) {
+    await pool.query(
+      'UPDATE users SET password = $1 WHERE LOWER(email) = LOWER($2)',
+      [newPassword, email]
+    );
   },
 
   async recordDrink(userId, username, beerType) {

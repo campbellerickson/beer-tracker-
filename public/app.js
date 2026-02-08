@@ -55,12 +55,32 @@ async function checkAuth() {
 function showLogin() {
   loginForm.classList.remove('hidden');
   registerForm.classList.add('hidden');
+  document.getElementById('forgot-form').classList.add('hidden');
+  document.getElementById('reset-form').classList.add('hidden');
   authError.classList.add('hidden');
 }
 
 function showRegister() {
   loginForm.classList.add('hidden');
   registerForm.classList.remove('hidden');
+  document.getElementById('forgot-form').classList.add('hidden');
+  document.getElementById('reset-form').classList.add('hidden');
+  authError.classList.add('hidden');
+}
+
+function showForgotPassword() {
+  loginForm.classList.add('hidden');
+  registerForm.classList.add('hidden');
+  document.getElementById('forgot-form').classList.remove('hidden');
+  document.getElementById('reset-form').classList.add('hidden');
+  authError.classList.add('hidden');
+}
+
+function showResetForm() {
+  loginForm.classList.add('hidden');
+  registerForm.classList.add('hidden');
+  document.getElementById('forgot-form').classList.add('hidden');
+  document.getElementById('reset-form').classList.remove('hidden');
   authError.classList.add('hidden');
 }
 
@@ -100,10 +120,11 @@ async function login() {
 
 async function register() {
   const inviteCode = document.getElementById('invite-code').value.trim();
-  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const displayName = document.getElementById('reg-displayname').value.trim();
   const password = document.getElementById('reg-password').value;
 
-  if (!inviteCode || !username || !password) {
+  if (!inviteCode || !email || !displayName || !password) {
     showError('Please fill in all fields');
     return;
   }
@@ -112,7 +133,7 @@ async function register() {
     const res = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inviteCode, username, password })
+      body: JSON.stringify({ inviteCode, email, displayName, password })
     });
 
     const data = await res.json();
@@ -127,6 +148,77 @@ async function register() {
     }
   } catch (err) {
     showError('Registration failed');
+  }
+}
+
+async function requestReset() {
+  const email = document.getElementById('forgot-email').value.trim();
+
+  if (!email) {
+    showError('Please enter your email');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      // Show the code to user (in production, this would be emailed)
+      if (data.code) {
+        alert('Your reset code is: ' + data.code + '\n\nIn production, this would be emailed to you.');
+      }
+      showResetForm();
+    } else {
+      showError(data.error);
+    }
+  } catch (err) {
+    showError('Request failed');
+  }
+}
+
+async function resetPassword() {
+  const code = document.getElementById('reset-code').value.trim();
+  const newPassword = document.getElementById('new-password').value;
+  const confirmPassword = document.getElementById('confirm-password').value;
+
+  if (!code || !newPassword || !confirmPassword) {
+    showError('Please fill in all fields');
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    showError('Passwords do not match');
+    return;
+  }
+
+  if (newPassword.length < 4) {
+    showError('Password must be at least 4 characters');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, newPassword })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert('Password reset successful! Please login with your new password.');
+      showLogin();
+    } else {
+      showError(data.error);
+    }
+  } catch (err) {
+    showError('Reset failed');
   }
 }
 
