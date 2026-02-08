@@ -299,6 +299,21 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
+// Admin reset - clear all progress
+app.post('/api/admin/reset', authenticate, async (req, res) => {
+  if (!req.user.is_admin) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    await db.resetAllProgress();
+    res.json({ success: true, message: 'All progress has been reset' });
+  } catch (err) {
+    console.error('Reset error:', err);
+    res.status(500).json({ error: 'Failed to reset progress' });
+  }
+});
+
 // Create invite (authenticated users only)
 app.post('/api/invite', authenticate, async (req, res) => {
   try {

@@ -54,6 +54,7 @@
         </div>
         <div class="header-actions">
           <button onclick="generateInvite()" class="btn-invite">+ INVITE</button>
+          <button id="reset-btn" onclick="showResetConfirm()" class="btn-reset hidden">RESET</button>
           <button onclick="logout()" class="btn-logout">LOGOUT</button>
         </div>
       </header>
@@ -136,6 +137,16 @@
           <input type="text" id="invite-link" readonly>
           <button onclick="copyInvite()" class="btn-primary">COPY LINK</button>
           <button onclick="closeInviteModal()" class="btn-secondary">CLOSE</button>
+        </div>
+      </div>
+
+      <!-- Reset Confirmation Modal -->
+      <div id="reset-modal" class="modal hidden">
+        <div class="modal-content reset-modal">
+          <h3>RESET ALL PROGRESS?</h3>
+          <p class="reset-warning">This will reset ALL beer counts to 0 and delete all drink history. This cannot be undone!</p>
+          <button onclick="confirmReset()" class="btn-danger">YES, RESET EVERYTHING</button>
+          <button onclick="closeResetModal()" class="btn-secondary">CANCEL</button>
         </div>
       </div>
     </div>

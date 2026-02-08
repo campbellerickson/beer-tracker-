@@ -124,5 +124,22 @@ module.exports = {
 
   async deleteSession(token) {
     await pool.query('DELETE FROM sessions WHERE token = $1', [token]);
+  },
+
+  // Admin functions
+  async resetAllProgress() {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('UPDATE users SET beer_count = 0');
+      await client.query('DELETE FROM drinks');
+      await client.query('COMMIT');
+      return true;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 };

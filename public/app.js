@@ -146,12 +146,15 @@ function showDashboard() {
   document.getElementById('player-name').textContent = currentUser.username.toUpperCase();
   document.getElementById('your-beers').textContent = currentUser.beer_count;
 
-  // Show admin badge if admin
+  // Show admin badge and reset button if admin
   const adminBadge = document.getElementById('admin-badge');
+  const resetBtn = document.getElementById('reset-btn');
   if (currentUser.is_admin) {
     adminBadge.classList.remove('hidden');
+    resetBtn.classList.remove('hidden');
   } else {
     adminBadge.classList.add('hidden');
+    resetBtn.classList.add('hidden');
   }
 
   loadStats();
@@ -400,3 +403,32 @@ document.getElementById('reg-password').addEventListener('keypress', (e) => {
 document.getElementById('beer-type').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') drinkBeer();
 });
+
+// Admin Reset Functions
+function showResetConfirm() {
+  document.getElementById('reset-modal').classList.remove('hidden');
+}
+
+function closeResetModal() {
+  document.getElementById('reset-modal').classList.add('hidden');
+}
+
+async function confirmReset() {
+  try {
+    const res = await fetch('/api/admin/reset', { method: 'POST' });
+    const data = await res.json();
+
+    if (res.ok) {
+      closeResetModal();
+      currentUser.beer_count = 0;
+      document.getElementById('your-beers').textContent = '0';
+      loadStats();
+      alert('All progress has been reset!');
+    } else {
+      alert(data.error || 'Reset failed');
+    }
+  } catch (err) {
+    console.error('Reset error:', err);
+    alert('Reset failed');
+  }
+}
