@@ -305,7 +305,8 @@ app.post('/api/invite', authenticate, async (req, res) => {
     const code = uuidv4().slice(0, 8).toUpperCase();
     await db.createInvite(code, req.user.id);
     const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${PORT}`;
-    res.json({ code, link: `${baseUrl}?invite=${code}` });
+    // Include sharer's username in the invite link
+    res.json({ code, link: `${baseUrl}?invite=${code}&ref=${encodeURIComponent(req.user.username)}` });
   } catch (err) {
     console.error('Invite error:', err);
     res.status(500).json({ error: 'Failed to create invite' });

@@ -12,15 +12,32 @@ const authError = document.getElementById('auth-error');
 window.addEventListener('load', async () => {
   const params = new URLSearchParams(window.location.search);
   const inviteCode = params.get('invite');
+  const referrer = params.get('ref');
 
   if (inviteCode) {
     document.getElementById('invite-code').value = inviteCode;
     showRegister();
+
+    // Show who invited them
+    if (referrer) {
+      showReferrer(referrer);
+    }
   }
 
   // Check if already logged in
   await checkAuth();
 });
+
+function showReferrer(username) {
+  const registerForm = document.getElementById('register-form');
+  const existingBanner = registerForm.querySelector('.referrer-banner');
+  if (existingBanner) existingBanner.remove();
+
+  const banner = document.createElement('div');
+  banner.className = 'referrer-banner';
+  banner.innerHTML = `<span class="referrer-icon">&#127881;</span> Invited by <strong>${username.toUpperCase()}</strong>`;
+  registerForm.insertBefore(banner, registerForm.firstChild.nextSibling);
+}
 
 async function checkAuth() {
   try {
