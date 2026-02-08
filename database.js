@@ -1,161 +1,128 @@
-const fs = require('fs');
-const path = require('path');
+const { Pool } = require('pg');
 
-const DB_FILE = path.join(__dirname, 'data.json');
-
-// Default database structure
-const defaultData = {
-  users: {},
-  invites: {},
-  sessions: {},
-  drinks: []
-};
-
-// Load or initialize database
-function loadDB() {
-  try {
-    if (fs.existsSync(DB_FILE)) {
-      const data = fs.readFileSync(DB_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (err) {
-    console.error('Error loading database:', err);
-  }
-  return { ...defaultData };
-}
-
-// Save database
-function saveDB(data) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-}
-
-// Database instance
-let db = loadDB();
-
-// Ensure drinks array exists
-if (!db.drinks) {
-  db.drinks = [];
-  saveDB(db);
-}
-
-// Ensure admin invite exists
-if (!db.invites['ADMINBEER']) {
-  db.invites['ADMINBEER'] = {
-    code: 'ADMINBEER',
-    createdBy: null,
-    usedBy: null,
-    isAdmin: true,
-    createdAt: new Date().toISOString()
-  };
-  saveDB(db);
-  console.log('\n========================================');
-  console.log('ADMIN INVITE CODE: ADMINBEER');
-  console.log('Use this to create the admin account!');
-  console.log('========================================\n');
-}
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 module.exports = {
   // Users
-  getUser(id) {
-    return db.users[id] || null;
+  async getUser(id) {
+    const result = await pool.query(
+      'SELECT id, username, password, beer_count, is_admin, created_at FROM users WHERE id = $1',
+      [id]
+    );
+    return result.rows[0] || null;
   },
 
-  getUserByUsername(username) {
-    return Object.values(db.users).find(u => u.username === username) || null;
+  async getUserByUsername(username) {
+    const result = await pool.query(
+      'SELECT id, username, password, beer_count, is_admin, created_at FROM users WHERE username = $1',
+      [username]
+    );
+    return result.rows[0] || null;
   },
 
-  createUser(id, username, password, isAdmin = false) {
-    db.users[id] = {
-      id,
-      username,
-      password,
-      beerCount: 0,
-      isAdmin,
-      createdAt: new Date().toISOString()
-    };
-    saveDB(db);
-    return db.users[id];
+  async createUser(id, username, password, isAdmin = false) {
+    const result = await pool.query(
+      'INSERT INTO users (id, username, password, is_admin) VALUES ($1, $2, $3, $4) RETURNING *',
+      [id, username, password, isAdmin]
+    );
+    return result.rows[0];
   },
 
-  recordDrink(userId, username, beerType) {
-    if (db.users[userId]) {
-      db.users[userId].beerCount += 1;
-      db.drinks.push({
-        id: Date.now().toString(),
-        userId,
-        username,
-        beerType,
-        timestamp: new Date().toISOString()
-      });
-      saveDB(db);
-      return db.users[userId].beerCount;
+  async recordDrink(userId, username, beerType) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        'UPDATE users SET beer_count = beer_count + 1 WHERE id = $1',
+        [userId]
+      );
+      await client.query(
+        'INSERT INTO drinks (user_id, username, beer_type) VALUES ($1, $2, $3)',
+        [userId, username, beerType]
+      );
+      const result = await client.query(
+        'SELECT beer_count FROM users WHERE id = $1',
+        [userId]
+      );
+      await client.query('COMMIT');
+      return result.rows[0]?.beer_count || 0;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
-    return 0;
   },
 
-  getLeaderboard() {
-    return Object.values(db.users)
-      .map(u => ({ username: u.username, beerCount: u.beerCount, isAdmin: u.isAdmin }))
-      .sort((a, b) => b.beerCount - a.beerCount);
+  async getLeaderboard() {
+    const result = await pool.query(
+      'SELECT username, beer_count, is_admin FROM users ORDER BY beer_count DESC'
+    );
+    return result.rows;
   },
 
-  getTotalBeers() {
-    return Object.values(db.users).reduce((sum, u) => sum + u.beerCount, 0);
+  async getTotalBeers() {
+    const result = await pool.query('SELECT COALESCE(SUM(beer_count), 0) as total FROM users');
+    return parseInt(result.rows[0].total, 10);
   },
 
-  getRecentDrinks(limit = 10) {
-    return db.drinks.slice(-limit).reverse();
+  async getRecentDrinks(limit = 10) {
+    const result = await pool.query(
+      'SELECT username, beer_type, created_at as timestamp FROM drinks ORDER BY created_at DESC LIMIT $1',
+      [limit]
+    );
+    return result.rows;
   },
 
   // Invites
-  getInvite(code) {
-    return db.invites[code] || null;
+  async getInvite(code) {
+    const result = await pool.query('SELECT * FROM invites WHERE code = $1', [code]);
+    return result.rows[0] || null;
   },
 
-  isInviteValid(code) {
-    const invite = db.invites[code];
-    return invite && !invite.usedBy;
+  async isInviteValid(code) {
+    const result = await pool.query(
+      'SELECT code FROM invites WHERE code = $1 AND used_by IS NULL',
+      [code]
+    );
+    return result.rows.length > 0;
   },
 
-  useInvite(code, userId) {
-    if (db.invites[code]) {
-      db.invites[code].usedBy = userId;
-      db.invites[code].usedAt = new Date().toISOString();
-      saveDB(db);
-      return db.invites[code].isAdmin || false;
-    }
-    return false;
+  async useInvite(code, userId) {
+    const result = await pool.query(
+      'UPDATE invites SET used_by = $1, used_at = CURRENT_TIMESTAMP WHERE code = $2 RETURNING is_admin',
+      [userId, code]
+    );
+    return result.rows[0]?.is_admin || false;
   },
 
-  createInvite(code, createdBy) {
-    db.invites[code] = {
-      code,
-      createdBy,
-      usedBy: null,
-      isAdmin: false,
-      createdAt: new Date().toISOString()
-    };
-    saveDB(db);
-    return db.invites[code];
+  async createInvite(code, createdBy) {
+    await pool.query(
+      'INSERT INTO invites (code, created_by) VALUES ($1, $2)',
+      [code, createdBy]
+    );
   },
 
   // Sessions
-  getSession(token) {
-    return db.sessions[token] || null;
+  async getSession(token) {
+    const result = await pool.query(
+      'SELECT * FROM sessions WHERE token = $1',
+      [token]
+    );
+    return result.rows[0] || null;
   },
 
-  createSession(token, userId) {
-    db.sessions[token] = {
-      token,
-      userId,
-      createdAt: new Date().toISOString()
-    };
-    saveDB(db);
-    return db.sessions[token];
+  async createSession(token, userId) {
+    await pool.query(
+      'INSERT INTO sessions (token, user_id) VALUES ($1, $2)',
+      [token, userId]
+    );
   },
 
-  deleteSession(token) {
-    delete db.sessions[token];
-    saveDB(db);
+  async deleteSession(token) {
+    await pool.query('DELETE FROM sessions WHERE token = $1', [token]);
   }
 };

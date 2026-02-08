@@ -6,7 +6,7 @@ const OpenAI = require('openai');
 const db = require('./database');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // OpenAI client
 const openai = new OpenAI({
@@ -43,17 +43,14 @@ async function verifyBeerPhoto(photoBase64, claimedBeerType) {
     });
 
     const content = response.choices[0].message.content;
-    // Try to parse JSON from the response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     }
-    // Fallback: if it mentions beer positively, approve
     const isBeer = content.toLowerCase().includes('yes') || content.toLowerCase().includes('beer') && !content.toLowerCase().includes('not');
     return { isBeer, message: content };
   } catch (err) {
     console.error('Vision API error:', err.message);
-    // On error, be lenient and allow it
     return { isBeer: true, message: "Couldn't verify but I trust you!" };
   }
 }
@@ -87,98 +84,113 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Auth middleware
-function authenticate(req, res, next) {
+// Async auth middleware
+async function authenticate(req, res, next) {
   const token = req.cookies.session;
   if (!token) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  const session = db.getSession(token);
-  if (!session) {
-    return res.status(401).json({ error: 'Invalid session' });
-  }
+  try {
+    const session = await db.getSession(token);
+    if (!session) {
+      return res.status(401).json({ error: 'Invalid session' });
+    }
 
-  const user = db.getUser(session.userId);
-  if (!user) {
-    return res.status(401).json({ error: 'User not found' });
-  }
+    const user = await db.getUser(session.user_id);
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
 
-  req.user = {
-    id: user.id,
-    username: user.username,
-    beer_count: user.beerCount,
-    is_admin: user.isAdmin || false
-  };
-  next();
+    req.user = {
+      id: user.id,
+      username: user.username,
+      beer_count: user.beer_count,
+      is_admin: user.is_admin || false
+    };
+    next();
+  } catch (err) {
+    console.error('Auth error:', err);
+    res.status(500).json({ error: 'Authentication failed' });
+  }
 }
 
 // Check if invite code is valid
-app.get('/api/invite/:code', (req, res) => {
-  if (!db.isInviteValid(req.params.code)) {
-    return res.status(404).json({ error: 'Invalid or used invite code' });
+app.get('/api/invite/:code', async (req, res) => {
+  try {
+    const valid = await db.isInviteValid(req.params.code);
+    if (!valid) {
+      return res.status(404).json({ error: 'Invalid or used invite code' });
+    }
+    res.json({ valid: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
   }
-  res.json({ valid: true });
 });
 
 // Register with invite code
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
   const { username, password, inviteCode } = req.body;
 
   if (!username || !password || !inviteCode) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  // Check invite
-  if (!db.isInviteValid(inviteCode)) {
-    return res.status(400).json({ error: 'Invalid or used invite code' });
-  }
-
-  // Check if username exists
-  if (db.getUserByUsername(username)) {
-    return res.status(400).json({ error: 'Username already taken' });
-  }
-
-  const userId = uuidv4();
-  const sessionToken = uuidv4();
-
   try {
-    // Use invite and check if it grants admin
-    const isAdmin = db.useInvite(inviteCode, userId);
-    db.createUser(userId, username, password, isAdmin);
-    db.createSession(sessionToken, userId);
+    const valid = await db.isInviteValid(inviteCode);
+    if (!valid) {
+      return res.status(400).json({ error: 'Invalid or used invite code' });
+    }
 
-    res.cookie('session', sessionToken, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
+    const existing = await db.getUserByUsername(username);
+    if (existing) {
+      return res.status(400).json({ error: 'Username already taken' });
+    }
+
+    const userId = uuidv4();
+    const sessionToken = uuidv4();
+
+    const isAdmin = await db.useInvite(inviteCode, userId);
+    await db.createUser(userId, username, password, isAdmin);
+    await db.createSession(sessionToken, userId);
+
+    res.cookie('session', sessionToken, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
     res.json({ success: true, user: { id: userId, username, beer_count: 0, is_admin: isAdmin } });
   } catch (err) {
+    console.error('Register error:', err);
     res.status(500).json({ error: 'Registration failed' });
   }
 });
 
 // Login
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
-  const user = db.getUserByUsername(username);
-  if (!user || user.password !== password) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+  try {
+    const user = await db.getUserByUsername(username);
+    if (!user || user.password !== password) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const sessionToken = uuidv4();
+    await db.createSession(sessionToken, user.id);
+
+    res.cookie('session', sessionToken, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
+    res.json({
+      success: true,
+      user: { id: user.id, username: user.username, beer_count: user.beer_count, is_admin: user.is_admin || false }
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Login failed' });
   }
-
-  const sessionToken = uuidv4();
-  db.createSession(sessionToken, user.id);
-
-  res.cookie('session', sessionToken, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
-  res.json({
-    success: true,
-    user: { id: user.id, username: user.username, beer_count: user.beerCount, is_admin: user.isAdmin || false }
-  });
 });
 
 // Logout
-app.post('/api/logout', (req, res) => {
+app.post('/api/logout', async (req, res) => {
   const token = req.cookies.session;
   if (token) {
-    db.deleteSession(token);
+    await db.deleteSession(token);
   }
   res.clearCookie('session');
   res.json({ success: true });
@@ -201,62 +213,85 @@ app.post('/api/drink', authenticate, async (req, res) => {
     return res.status(400).json({ error: 'Photo is required for verification' });
   }
 
-  // Verify the photo is actually a beer
-  const verification = await verifyBeerPhoto(photo, beerType.trim());
+  try {
+    const verification = await verifyBeerPhoto(photo, beerType.trim());
 
-  if (!verification.isBeer) {
-    return res.json({
-      success: false,
-      verified: false,
-      verificationMessage: verification.message || "That doesn't look like a beer!"
+    if (!verification.isBeer) {
+      return res.json({
+        success: false,
+        verified: false,
+        verificationMessage: verification.message || "That doesn't look like a beer!"
+      });
+    }
+
+    const newCount = await db.recordDrink(req.user.id, req.user.username, beerType.trim());
+    const totalBeers = await db.getTotalBeers();
+    const remaining = Math.max(0, 1000000 - totalBeers);
+
+    const aiRoast = await generateRoast(req.user.username, beerType.trim(), newCount, remaining);
+
+    res.json({
+      success: true,
+      verified: true,
+      verificationMessage: verification.message,
+      beer_count: newCount,
+      aiRoast
     });
+  } catch (err) {
+    console.error('Drink error:', err);
+    res.status(500).json({ error: 'Failed to record drink' });
   }
-
-  const newCount = db.recordDrink(req.user.id, req.user.username, beerType.trim());
-  const totalBeers = db.getTotalBeers();
-  const remaining = Math.max(0, 1000000 - totalBeers);
-
-  // Generate AI roast
-  const aiRoast = await generateRoast(req.user.username, beerType.trim(), newCount, remaining);
-
-  res.json({
-    success: true,
-    verified: true,
-    verificationMessage: verification.message,
-    beer_count: newCount,
-    aiRoast
-  });
 });
 
 // Get leaderboard and stats
-app.get('/api/stats', (req, res) => {
-  const leaderboard = db.getLeaderboard();
-  const totalUserBeers = db.getTotalBeers();
-  const recentDrinks = db.getRecentDrinks(10);
+app.get('/api/stats', async (req, res) => {
+  try {
+    const leaderboard = await db.getLeaderboard();
+    const totalUserBeers = await db.getTotalBeers();
+    const recentDrinks = await db.getRecentDrinks(10);
 
-  const remaining = Math.max(0, 1000000 - totalUserBeers);
-  const progress = totalUserBeers;
+    const remaining = Math.max(0, 1000000 - totalUserBeers);
+    const progress = totalUserBeers;
 
-  res.json({
-    leaderboard: leaderboard.map(u => ({
-      username: u.username,
-      beer_count: u.beerCount,
-      is_admin: u.isAdmin || false
-    })),
-    recentDrinks,
-    remaining,
-    progress,
-    goal: 1000000
-  });
+    res.json({
+      leaderboard: leaderboard.map(u => ({
+        username: u.username,
+        beer_count: u.beer_count,
+        is_admin: u.is_admin || false
+      })),
+      recentDrinks: recentDrinks.map(d => ({
+        username: d.username,
+        beerType: d.beer_type,
+        timestamp: d.timestamp
+      })),
+      remaining,
+      progress,
+      goal: 1000000
+    });
+  } catch (err) {
+    console.error('Stats error:', err);
+    res.status(500).json({ error: 'Failed to load stats' });
+  }
 });
 
 // Create invite (authenticated users only)
-app.post('/api/invite', authenticate, (req, res) => {
-  const code = uuidv4().slice(0, 8).toUpperCase();
-  db.createInvite(code, req.user.id);
-  res.json({ code, link: `http://localhost:${PORT}?invite=${code}` });
+app.post('/api/invite', authenticate, async (req, res) => {
+  try {
+    const code = uuidv4().slice(0, 8).toUpperCase();
+    await db.createInvite(code, req.user.id);
+    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${PORT}`;
+    res.json({ code, link: `${baseUrl}?invite=${code}` });
+  } catch (err) {
+    console.error('Invite error:', err);
+    res.status(500).json({ error: 'Failed to create invite' });
+  }
 });
 
-app.listen(PORT, () => {
-  console.log(`\nBeer Tracker running at http://localhost:${PORT}\n`);
-});
+// Only start server if not in Vercel
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\nBeer Tracker running at http://localhost:${PORT}\n`);
+  });
+}
+
+module.exports = app;
