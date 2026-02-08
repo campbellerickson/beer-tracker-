@@ -550,10 +550,143 @@ function closeInviteModal() {
 
 // Auto-refresh stats every 5 seconds
 setInterval(() => {
-  if (currentUser) {
+  if (currentUser && currentTab === 'home') {
     loadStats();
   }
 }, 5000);
+
+// Tab Navigation
+let currentTab = 'home';
+let chatMessages = [];
+let chatInterval = null;
+
+function switchTab(tab) {
+  currentTab = tab;
+
+  // Update tab buttons
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+
+  // Show/hide views
+  const main = document.querySelector('.scoreboard-main');
+  const chatView = document.getElementById('chat-view');
+
+  if (tab === 'chat') {
+    main.classList.add('hidden');
+    chatView.classList.remove('hidden');
+    loadMessages();
+    startChatRefresh();
+  } else {
+    main.classList.remove('hidden');
+    chatView.classList.add('hidden');
+    stopChatRefresh();
+
+    if (tab === 'leaderboard') {
+      // Scroll to leaderboard section
+      document.querySelector('.leaderboard-section').scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // Scroll to top for home
+      main.scrollTo(0, 0);
+    }
+  }
+}
+
+function startChatRefresh() {
+  if (chatInterval) clearInterval(chatInterval);
+  chatInterval = setInterval(loadMessages, 3000);
+}
+
+function stopChatRefresh() {
+  if (chatInterval) {
+    clearInterval(chatInterval);
+    chatInterval = null;
+  }
+}
+
+async function loadMessages() {
+  try {
+    const res = await fetch('/api/messages');
+    const data = await res.json();
+
+    if (res.ok) {
+      renderMessages(data.messages);
+    }
+  } catch (err) {
+    console.error('Failed to load messages', err);
+  }
+}
+
+function renderMessages(messages) {
+  const container = document.getElementById('chat-messages');
+  const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+
+  container.innerHTML = messages.map(msg => {
+    const isMe = currentUser && msg.display_name === currentUser.username;
+    const time = formatTime(msg.created_at);
+    const photo = msg.profile_photo
+      ? `<img src="${msg.profile_photo}" alt="${msg.display_name}">`
+      : `<span>&#127866;</span>`;
+
+    return `
+      <div class="chat-message ${isMe ? 'mine' : ''}">
+        <div class="chat-avatar" onclick="viewProfile('${msg.display_name}')">${photo}</div>
+        <div class="chat-bubble">
+          <div class="chat-meta">
+            <span class="chat-name" onclick="viewProfile('${msg.display_name}')">${msg.display_name.toUpperCase()}</span>
+            <span class="chat-time">${time}</span>
+          </div>
+          <div class="chat-text">${escapeHtml(msg.content)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Auto-scroll to bottom if was at bottom
+  if (wasAtBottom) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const content = input.value.trim();
+
+  if (!content) return;
+
+  input.disabled = true;
+
+  try {
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
+
+    if (res.ok) {
+      input.value = '';
+      loadMessages();
+    } else {
+      const data = await res.json();
+      alert(data.error || 'Failed to send message');
+    }
+  } catch (err) {
+    alert('Failed to send message');
+  }
+
+  input.disabled = false;
+  input.focus();
+}
+
+// Enter key to send message
+document.getElementById('chat-input')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') sendMessage();
+});
 
 // Allow Enter key to submit forms
 document.getElementById('login-password').addEventListener('keypress', (e) => {

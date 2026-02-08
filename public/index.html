@@ -170,6 +170,36 @@
         </section>
       </main>
 
+      <!-- Chat View (hidden by default) -->
+      <div id="chat-view" class="chat-view hidden">
+        <div class="chat-header">
+          <h2>BEER CHAT</h2>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <!-- Messages populated by JS -->
+        </div>
+        <div class="chat-input-area">
+          <input type="text" id="chat-input" placeholder="Type a message..." maxlength="500">
+          <button onclick="sendMessage()" class="btn-send">SEND</button>
+        </div>
+      </div>
+
+      <!-- Bottom Tab Bar -->
+      <nav class="tab-bar">
+        <button class="tab-item active" onclick="switchTab('home')" id="tab-home">
+          <span class="tab-icon">&#127866;</span>
+          <span class="tab-label">DRINK</span>
+        </button>
+        <button class="tab-item" onclick="switchTab('chat')" id="tab-chat">
+          <span class="tab-icon">&#128172;</span>
+          <span class="tab-label">CHAT</span>
+        </button>
+        <button class="tab-item" onclick="switchTab('leaderboard')" id="tab-leaderboard">
+          <span class="tab-icon">&#127942;</span>
+          <span class="tab-label">RANKS</span>
+        </button>
+      </nav>
+
       <!-- Invite Modal -->
       <div id="invite-modal" class="modal hidden">
         <div class="modal-content">

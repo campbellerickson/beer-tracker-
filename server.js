@@ -416,6 +416,38 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
+// Chat endpoints
+app.get('/api/messages', authenticate, async (req, res) => {
+  try {
+    const before = req.query.before ? parseInt(req.query.before) : null;
+    const messages = await db.getMessages(50, before);
+    res.json({ messages });
+  } catch (err) {
+    console.error('Messages error:', err);
+    res.status(500).json({ error: 'Failed to load messages' });
+  }
+});
+
+app.post('/api/messages', authenticate, async (req, res) => {
+  const { content } = req.body;
+
+  if (!content || !content.trim()) {
+    return res.status(400).json({ error: 'Message content required' });
+  }
+
+  if (content.length > 500) {
+    return res.status(400).json({ error: 'Message too long (max 500 chars)' });
+  }
+
+  try {
+    const message = await db.sendMessage(req.user.id, req.user.username, content.trim());
+    res.json({ success: true, message });
+  } catch (err) {
+    console.error('Send message error:', err);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
 // Admin reset - clear all progress
 app.post('/api/admin/reset', authenticate, async (req, res) => {
   if (!req.user.is_admin) {

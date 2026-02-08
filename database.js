@@ -189,6 +189,28 @@ module.exports = {
     return result.rows;
   },
 
+  // Chat functions
+  async sendMessage(userId, displayName, content) {
+    const result = await pool.query(
+      'INSERT INTO messages (user_id, display_name, content) VALUES ($1, $2, $3) RETURNING *',
+      [userId, displayName, content]
+    );
+    return result.rows[0];
+  },
+
+  async getMessages(limit = 50, before = null) {
+    let query = 'SELECT m.*, u.profile_photo FROM messages m LEFT JOIN users u ON m.user_id = u.id ORDER BY m.created_at DESC LIMIT $1';
+    let params = [limit];
+
+    if (before) {
+      query = 'SELECT m.*, u.profile_photo FROM messages m LEFT JOIN users u ON m.user_id = u.id WHERE m.id < $2 ORDER BY m.created_at DESC LIMIT $1';
+      params = [limit, before];
+    }
+
+    const result = await pool.query(query, params);
+    return result.rows.reverse(); // Return in chronological order
+  },
+
   // Admin functions
   async resetAllProgress() {
     const client = await pool.connect();
