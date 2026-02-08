@@ -236,10 +236,7 @@ async function requestReset() {
     const data = await res.json();
 
     if (res.ok) {
-      // Show the code to user (in production, this would be emailed)
-      if (data.code) {
-        alert('Your reset code is: ' + data.code + '\n\nIn production, this would be emailed to you.');
-      }
+      alert('Check your email for the reset code!');
       showResetForm();
     } else {
       showError(data.error);

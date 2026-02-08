@@ -3,7 +3,11 @@ const cookieParser = require('cookie-parser');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const OpenAI = require('openai');
+const { Resend } = require('resend');
 const db = require('./database');
+
+// Resend client for emails
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -243,17 +247,38 @@ app.post('/api/forgot-password', async (req, res) => {
     const user = await db.getUserByEmail(email);
     if (!user) {
       // Don't reveal if email exists or not for security
-      return res.json({ success: true, message: 'If that email exists, a reset code has been generated' });
+      return res.json({ success: true, message: 'If that email exists, a reset code has been sent' });
     }
 
     // Generate 6-digit reset code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     await db.createPasswordReset(email, code);
 
-    // In production, you'd send this via email. For now, log it.
-    console.log(`PASSWORD RESET CODE for ${email}: ${code}`);
+    // Send email via Resend
+    try {
+      await resend.emails.send({
+        from: 'Beer Tracker <noreply@resend.dev>',
+        to: email,
+        subject: '🍺 Your Password Reset Code',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #ff6b00; text-align: center;">MILLION BEER CHALLENGE</h1>
+            <p style="font-size: 18px; text-align: center;">Your password reset code is:</p>
+            <div style="background: #1a1a2e; color: #00ff88; font-size: 32px; font-weight: bold; text-align: center; padding: 20px; border-radius: 10px; letter-spacing: 8px;">
+              ${code}
+            </div>
+            <p style="color: #666; text-align: center; margin-top: 20px;">This code expires in 1 hour.</p>
+            <p style="color: #666; text-align: center;">If you didn't request this, ignore this email.</p>
+          </div>
+        `
+      });
+      console.log(`Password reset email sent to ${email}`);
+    } catch (emailErr) {
+      console.error('Failed to send email:', emailErr.message);
+      // Still return success - don't expose email sending failures
+    }
 
-    res.json({ success: true, message: 'Reset code generated', code }); // Remove 'code' in production!
+    res.json({ success: true, message: 'Reset code sent to your email' });
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ error: 'Failed to process request' });
