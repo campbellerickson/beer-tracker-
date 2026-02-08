@@ -9,7 +9,7 @@ module.exports = {
   // Users
   async getUser(id) {
     const result = await pool.query(
-      'SELECT id, email, display_name, password, beer_count, is_admin, created_at FROM users WHERE id = $1',
+      'SELECT id, email, display_name, password, beer_count, beer_fact, profile_photo, is_admin, created_at FROM users WHERE id = $1',
       [id]
     );
     return result.rows[0] || null;
@@ -98,7 +98,7 @@ module.exports = {
 
   async getLeaderboard() {
     const result = await pool.query(
-      'SELECT username, beer_count, is_admin FROM users ORDER BY beer_count DESC'
+      'SELECT display_name as username, beer_count, is_admin FROM users WHERE display_name IS NOT NULL ORDER BY beer_count DESC'
     );
     return result.rows;
   },
