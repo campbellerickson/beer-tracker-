@@ -22,8 +22,8 @@ function getLaunchTime() {
   return new Date(launch.getTime() + ptOffset);
 }
 
-// Hardcoded launch: February 8, 2026 at 12:00 AM PT (midnight)
-const LAUNCH_DATE = new Date('2026-02-08T08:00:00.000Z'); // Midnight PT = 8 AM UTC
+// Launch: February 7, 2026 at 10:00 PM ET (tonight!)
+const LAUNCH_DATE = new Date('2026-02-08T03:00:00.000Z'); // 10pm ET = 3am UTC
 
 function checkCountdown() {
   const now = new Date();
@@ -686,6 +686,58 @@ async function sendMessage() {
 // Enter key to send message
 document.getElementById('chat-input')?.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') sendMessage();
+});
+
+// Drunk AI Functions
+function openDrunkAI() {
+  document.getElementById('drunk-ai-modal').classList.remove('hidden');
+  document.getElementById('drunk-ai-input').focus();
+}
+
+function closeDrunkAI() {
+  document.getElementById('drunk-ai-modal').classList.add('hidden');
+}
+
+async function sendDrunkAIMessage() {
+  const input = document.getElementById('drunk-ai-input');
+  const message = input.value.trim();
+  if (!message) return;
+
+  const messagesDiv = document.getElementById('drunk-ai-messages');
+
+  // Add user message
+  messagesDiv.innerHTML += `<div class="drunk-ai-msg user"><p>${escapeHtml(message)}</p></div>`;
+  input.value = '';
+  input.disabled = true;
+
+  // Add typing indicator
+  messagesDiv.innerHTML += `<div class="drunk-ai-msg ai typing" id="typing-indicator"><p>*thinking real hard*...</p></div>`;
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  try {
+    const res = await fetch('/api/drunk-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    const data = await res.json();
+
+    // Remove typing indicator and add response
+    document.getElementById('typing-indicator')?.remove();
+    messagesDiv.innerHTML += `<div class="drunk-ai-msg ai"><p>${escapeHtml(data.reply)}</p></div>`;
+  } catch (err) {
+    document.getElementById('typing-indicator')?.remove();
+    messagesDiv.innerHTML += `<div class="drunk-ai-msg ai"><p>*falls off barstool* whoops haha sorry what?? 🍺</p></div>`;
+  }
+
+  input.disabled = false;
+  input.focus();
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// Enter key for drunk AI
+document.getElementById('drunk-ai-input')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') sendDrunkAIMessage();
 });
 
 // Allow Enter key to submit forms

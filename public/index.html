@@ -147,6 +147,9 @@
           <div class="your-count">
             YOUR BEERS: <span id="your-beers">0</span>
           </div>
+          <button onclick="openDrunkAI()" class="btn-drunk-ai">
+            <span>&#129312;</span> CHAT WITH DRUNK.AI
+          </button>
         </section>
 
         <!-- Recent Drinks -->
@@ -261,6 +264,27 @@
             <p id="profile-fact">No beer fact yet!</p>
           </div>
           <button onclick="closeProfileModal()" class="btn-secondary">CLOSE</button>
+        </div>
+      </div>
+
+      <!-- Drunk AI Chat Modal -->
+      <div id="drunk-ai-modal" class="modal hidden">
+        <div class="modal-content drunk-ai-modal">
+          <div class="drunk-ai-header">
+            <span class="drunk-ai-icon">&#129312;</span>
+            <h3>DRUNK.AI</h3>
+            <p class="drunk-ai-subtitle">10 Molsons deep in Whistler</p>
+          </div>
+          <div class="drunk-ai-messages" id="drunk-ai-messages">
+            <div class="drunk-ai-msg ai">
+              <p>*burp* heyyy buddy!! whatcha wanna talk about?? I just did like 10 molsons eh and this mountain air is HITTING different 🍺🏔️</p>
+            </div>
+          </div>
+          <div class="drunk-ai-input-area">
+            <input type="text" id="drunk-ai-input" placeholder="Ask drunk.ai anything..." maxlength="200">
+            <button onclick="sendDrunkAIMessage()" class="btn-send">ASK</button>
+          </div>
+          <button onclick="closeDrunkAI()" class="btn-secondary">CLOSE</button>
         </div>
       </div>
 

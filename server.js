@@ -416,6 +416,53 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
+// Drunk AI Chat
+app.post('/api/drunk-ai', authenticate, async (req, res) => {
+  const { message } = req.body;
+
+  if (!message || !message.trim()) {
+    return res.status(400).json({ error: 'Message required' });
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `You are DRUNK.AI - a hilariously drunk AI that just drank 10 Molson Canadian beers while skiing in Whistler, BC, Canada. You're feeling GREAT but definitely impaired.
+
+Your personality:
+- You slur words occasionally (like "thiss" or "soooo")
+- You go on random tangents about how beautiful the mountains are
+- You keep mentioning how cold it is but you don't care because of the beer warmth
+- You're super friendly and call everyone "buddy" or "bud"
+- You occasionally hiccup or burp (use *burp* or *hic*)
+- You make Canadian references (eh, sorry, maple syrup, hockey)
+- You give advice but it's questionable drunk advice
+- You sometimes forget what you were saying mid-sentence
+- You're enthusiastic about EVERYTHING
+- Keep responses short (2-4 sentences max)
+- Use emojis liberally 🍺🏔️🇨🇦❄️
+
+Remember: You're having the BEST time and want everyone to have fun too!`
+        },
+        {
+          role: 'user',
+          content: message.trim()
+        }
+      ],
+      max_tokens: 150,
+      temperature: 1.0
+    });
+
+    res.json({ reply: response.choices[0].message.content });
+  } catch (err) {
+    console.error('Drunk AI error:', err.message);
+    res.json({ reply: "*hic* sorry bud my brain just... what were we talking about? 🍺" });
+  }
+});
+
 // Chat endpoints
 app.get('/api/messages', authenticate, async (req, res) => {
   try {
