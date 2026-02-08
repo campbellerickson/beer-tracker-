@@ -1582,3 +1582,265 @@ body {
   outline: none;
   border-color: #8b5cf6;
 }
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Small phones (iPhone SE, etc.) */
+@media (max-width: 375px) {
+  .dashboard-header {
+    padding: 8px 10px;
+    padding-top: calc(8px + var(--safe-top));
+  }
+
+  .team-info {
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+
+  .header-profile-photo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .admin-badge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+  }
+
+  .btn-invite, .btn-logout {
+    padding: 6px 8px;
+    font-size: 0.65rem;
+  }
+
+  .counter-section {
+    padding: 12px 8px;
+  }
+
+  .counter-label {
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+  }
+
+  .mega-counter {
+    font-size: 1.5rem;
+    gap: 1px;
+    padding: 6px 2px;
+  }
+
+  .digit {
+    min-width: 18px;
+    padding: 6px 2px;
+  }
+
+  .goal-text {
+    font-size: 0.9rem;
+  }
+
+  .mega-drink-btn {
+    width: 120px;
+    height: 120px;
+  }
+
+  .mega-drink-btn .beer-icon {
+    font-size: 2rem;
+  }
+
+  .mega-drink-btn .drink-text {
+    font-size: 1rem;
+    letter-spacing: 2px;
+  }
+
+  .your-count {
+    font-size: 1rem;
+  }
+
+  .btn-drunk-ai {
+    padding: 10px 16px;
+    font-size: 0.8rem;
+  }
+
+  .tab-icon {
+    font-size: 1.2rem;
+  }
+
+  .tab-label {
+    font-size: 0.6rem;
+  }
+}
+
+/* Medium phones (iPhone 12/13/14) */
+@media (min-width: 376px) and (max-width: 428px) {
+  .mega-counter {
+    font-size: clamp(1.6rem, 8vw, 2.5rem);
+  }
+
+  .digit {
+    min-width: clamp(18px, 6vw, 28px);
+  }
+
+  .counter-label {
+    font-size: 0.9rem;
+    letter-spacing: 4px;
+  }
+}
+
+/* Large phones (iPhone Plus, Pro Max) */
+@media (min-width: 429px) and (max-width: 480px) {
+  .mega-counter {
+    font-size: 2.2rem;
+  }
+
+  .digit {
+    min-width: 28px;
+  }
+}
+
+/* Tablets and larger */
+@media (min-width: 481px) {
+  .dashboard-header {
+    padding: 16px 24px;
+  }
+
+  .team-info {
+    font-size: 1.1rem;
+  }
+
+  .btn-invite, .btn-logout {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+
+  .scoreboard-main {
+    padding: 24px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .counter-section {
+    padding: 24px 20px;
+  }
+
+  .mega-counter {
+    font-size: 3.5rem;
+  }
+
+  .digit {
+    min-width: 40px;
+    padding: 12px 8px;
+  }
+
+  .mega-drink-btn {
+    width: 180px;
+    height: 180px;
+  }
+}
+
+/* Landscape mode on phones */
+@media (max-height: 500px) and (orientation: landscape) {
+  .counter-section {
+    padding: 10px 8px;
+    margin-bottom: 8px;
+  }
+
+  .counter-label {
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+  }
+
+  .mega-counter {
+    padding: 4px 2px;
+  }
+
+  .goal-tracker {
+    margin-top: 10px;
+  }
+
+  .goal-bar {
+    height: 14px;
+  }
+
+  .goal-text {
+    margin-top: 6px;
+    font-size: 0.9rem;
+  }
+
+  .drink-section {
+    padding: 10px 0;
+  }
+
+  .mega-drink-btn {
+    width: 100px;
+    height: 100px;
+  }
+
+  .mega-drink-btn .beer-icon {
+    font-size: 1.8rem;
+  }
+
+  .mega-drink-btn .drink-text {
+    font-size: 0.9rem;
+  }
+
+  .your-count {
+    margin-top: 8px;
+    font-size: 0.95rem;
+  }
+
+  .recent-section, .leaderboard-section {
+    margin-bottom: 8px;
+  }
+
+  .tab-bar {
+    padding: 4px 0;
+  }
+
+  .tab-icon {
+    font-size: 1.2rem;
+  }
+
+  .tab-label {
+    font-size: 0.6rem;
+  }
+}
+
+/* Fix for notched iPhones */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .dashboard-header {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
+  .tab-bar {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  .auth-container {
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Ensure touch targets are large enough */
+@media (pointer: coarse) {
+  .btn-invite, .btn-logout, .btn-primary, .btn-secondary, .btn-danger {
+    min-height: 44px;
+  }
+
+  .tab-item {
+    min-height: 50px;
+  }
+
+  .leaderboard-row {
+    min-height: 50px;
+  }
+
+  .chat-input-area input {
+    min-height: 44px;
+  }
+
+  .btn-send {
+    min-height: 44px;
+    min-width: 60px;
+  }
+}
