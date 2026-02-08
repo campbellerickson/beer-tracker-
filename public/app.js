@@ -320,11 +320,54 @@ function showDashboard() {
   if (currentUser.needs_profile) {
     setTimeout(showProfileSetup, 500);
   }
+
+  // Special subscription prompt for Austen Hong
+  if (currentUser.username.toLowerCase().includes('austen') ||
+      currentUser.username.toLowerCase().includes('austin')) {
+    setTimeout(showAustenSubscription, 1000);
+  }
 }
+
+function showAustenSubscription() {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'austen-sub-modal';
+  modal.innerHTML = `
+    <div class="modal-content" style="border-color: #ffd700; max-width: 380px;">
+      <h3 style="color: #ffd700; font-size: 1.4rem;">💰 PREMIUM SUBSCRIPTION REQUIRED 💰</h3>
+      <div style="background: var(--bg-dark); padding: 20px; border-radius: 12px; margin: 16px 0;">
+        <p style="color: var(--text); font-size: 1.1rem; margin-bottom: 12px;">Hey Austen!</p>
+        <p style="color: var(--red); font-size: 1.5rem; font-weight: 700; margin-bottom: 12px;">$50/MONTH</p>
+        <p style="color: var(--text-dim); font-size: 0.9rem; line-height: 1.5;">
+          To continue using Beer Tracker, you must pay <strong style="color: #00ff88;">Campbell Erickson</strong>
+          <strong style="color: #ffd700;">$50 in CASH</strong> every month.
+        </p>
+        <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 12px; font-style: italic;">
+          No Venmo. No checks. Cold hard cash only. 💵
+        </p>
+      </div>
+      <button class="btn-primary" onclick="document.getElementById('austen-sub-modal').remove()">I UNDERSTAND MY OBLIGATION</button>
+      <p style="color: var(--text-dim); font-size: 0.7rem; margin-top: 12px;">*This fee applies exclusively to you, Austen. Everyone else drinks free.</p>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+let hasTriggeredNuclear = false;
 
 function updateCounter(total) {
   const counterEl = document.getElementById('mega-counter');
+  const counterSection = document.querySelector('.counter-section');
   const numStr = total.toString().padStart(7, '0');
+
+  // Check if we hit zero
+  if (total <= 0 && !hasTriggeredNuclear) {
+    hasTriggeredNuclear = true;
+    counterSection.classList.add('counter-zero');
+    triggerNuclearExplosion();
+  } else if (total > 0) {
+    counterSection.classList.remove('counter-zero');
+  }
 
   // Format with comma: 999,999 -> ['9','9','9',',','9','9','9']
   const formatted = numStr.slice(0, 1) + ',' + numStr.slice(1, 4) + ',' + numStr.slice(4);
@@ -332,10 +375,45 @@ function updateCounter(total) {
 
   counterEl.innerHTML = digits.map(d => {
     if (d === ',') {
-      return `<span class="digit" style="background:none;border:none;padding:10px 5px;min-width:auto;color:#888899;text-shadow:none;">,</span>`;
+      return `<span class="digit" style="background:none;border:none;padding:10px 5px;min-width:auto;color:#888899;text-shadow:none;animation:none;">,</span>`;
     }
     return `<span class="digit">${d}</span>`;
   }).join('');
+}
+
+function triggerNuclearExplosion() {
+  // Create nuclear flash overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'nuclear-overlay';
+  document.body.appendChild(overlay);
+
+  // Create the offensive message
+  const message = document.createElement('div');
+  message.className = 'nuclear-message';
+  message.innerHTML = `
+    <h1>💥 YOU ABSOLUTE DEGENERATES 💥</h1>
+    <p>1,000,000 BEERS DEMOLISHED</p>
+    <p style="margin-top: 20px; color: #ff6b00;">YOUR LIVERS ARE LITERALLY CRYING RIGHT NOW</p>
+    <p style="margin-top: 10px; font-size: 1.5rem;">🍺 CONGRATULATIONS, YOU ALCOHOLIC LEGENDS 🍺</p>
+  `;
+  document.body.appendChild(message);
+
+  // Shake the whole screen
+  document.body.style.animation = 'textShake 0.1s infinite';
+  setTimeout(() => {
+    document.body.style.animation = '';
+  }, 3000);
+
+  // Remove overlay after animation
+  setTimeout(() => {
+    overlay.remove();
+  }, 3000);
+
+  // Keep message visible
+  setTimeout(() => {
+    message.style.animation = 'none';
+    message.style.opacity = '1';
+  }, 3000);
 }
 
 function formatTime(timestamp) {
