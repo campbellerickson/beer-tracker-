@@ -44,6 +44,7 @@
         <div class="team-info">
           <span class="player-icon">&#127866;</span>
           <span id="player-name">PLAYER</span>
+          <span id="admin-badge" class="admin-badge hidden">ADMIN</span>
         </div>
         <div class="header-actions">
           <button onclick="generateInvite()" class="btn-invite">+ INVITE</button>
@@ -74,14 +75,27 @@
           </div>
         </section>
 
-        <!-- Big Drink Button -->
+        <!-- Drink Section with Beer Type -->
         <section class="drink-section">
+          <div class="beer-type-input">
+            <input type="text" id="beer-type" placeholder="WHAT BEER? (e.g. IPA, Lager, Stout)" maxlength="50">
+          </div>
           <button id="drink-btn" onclick="drinkBeer()" class="mega-drink-btn">
             <span class="beer-icon">&#127866;</span>
             <span class="drink-text">DRINK!</span>
           </button>
           <div class="your-count">
             YOUR BEERS: <span id="your-beers">0</span>
+          </div>
+        </section>
+
+        <!-- Recent Drinks -->
+        <section class="recent-section">
+          <div class="recent-header">
+            <h2>RECENT DRINKS</h2>
+          </div>
+          <div class="recent-drinks" id="recent-drinks">
+            <!-- Populated by JS -->
           </div>
         </section>
 

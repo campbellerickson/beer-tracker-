@@ -8,9 +8,7 @@ const defaultData = {
   users: {},
   invites: {},
   sessions: {},
-  globalStats: {
-    startingCount: 999999
-  }
+  drinks: []
 };
 
 // Load or initialize database
@@ -34,18 +32,25 @@ function saveDB(data) {
 // Database instance
 let db = loadDB();
 
-// Ensure first invite exists
-if (!db.invites['FIRSTBEER']) {
-  db.invites['FIRSTBEER'] = {
-    code: 'FIRSTBEER',
+// Ensure drinks array exists
+if (!db.drinks) {
+  db.drinks = [];
+  saveDB(db);
+}
+
+// Ensure admin invite exists
+if (!db.invites['ADMINBEER']) {
+  db.invites['ADMINBEER'] = {
+    code: 'ADMINBEER',
     createdBy: null,
     usedBy: null,
+    isAdmin: true,
     createdAt: new Date().toISOString()
   };
   saveDB(db);
   console.log('\n========================================');
-  console.log('FIRST INVITE CODE: FIRSTBEER');
-  console.log('Use this to create the first account!');
+  console.log('ADMIN INVITE CODE: ADMINBEER');
+  console.log('Use this to create the admin account!');
   console.log('========================================\n');
 }
 
@@ -59,21 +64,29 @@ module.exports = {
     return Object.values(db.users).find(u => u.username === username) || null;
   },
 
-  createUser(id, username, password) {
+  createUser(id, username, password, isAdmin = false) {
     db.users[id] = {
       id,
       username,
       password,
       beerCount: 0,
+      isAdmin,
       createdAt: new Date().toISOString()
     };
     saveDB(db);
     return db.users[id];
   },
 
-  incrementBeerCount(userId) {
+  recordDrink(userId, username, beerType) {
     if (db.users[userId]) {
       db.users[userId].beerCount += 1;
+      db.drinks.push({
+        id: Date.now().toString(),
+        userId,
+        username,
+        beerType,
+        timestamp: new Date().toISOString()
+      });
       saveDB(db);
       return db.users[userId].beerCount;
     }
@@ -82,7 +95,7 @@ module.exports = {
 
   getLeaderboard() {
     return Object.values(db.users)
-      .map(u => ({ username: u.username, beerCount: u.beerCount }))
+      .map(u => ({ username: u.username, beerCount: u.beerCount, isAdmin: u.isAdmin }))
       .sort((a, b) => b.beerCount - a.beerCount);
   },
 
@@ -90,8 +103,8 @@ module.exports = {
     return Object.values(db.users).reduce((sum, u) => sum + u.beerCount, 0);
   },
 
-  getStartingCount() {
-    return db.globalStats.startingCount;
+  getRecentDrinks(limit = 10) {
+    return db.drinks.slice(-limit).reverse();
   },
 
   // Invites
@@ -109,7 +122,9 @@ module.exports = {
       db.invites[code].usedBy = userId;
       db.invites[code].usedAt = new Date().toISOString();
       saveDB(db);
+      return db.invites[code].isAdmin || false;
     }
+    return false;
   },
 
   createInvite(code, createdBy) {
@@ -117,6 +132,7 @@ module.exports = {
       code,
       createdBy,
       usedBy: null,
+      isAdmin: false,
       createdAt: new Date().toISOString()
     };
     saveDB(db);

@@ -128,6 +128,15 @@ function showDashboard() {
   dashboardScreen.classList.remove('hidden');
   document.getElementById('player-name').textContent = currentUser.username.toUpperCase();
   document.getElementById('your-beers').textContent = currentUser.beer_count;
+
+  // Show admin badge if admin
+  const adminBadge = document.getElementById('admin-badge');
+  if (currentUser.is_admin) {
+    adminBadge.classList.remove('hidden');
+  } else {
+    adminBadge.classList.add('hidden');
+  }
+
   loadStats();
 }
 
@@ -147,6 +156,17 @@ function updateCounter(total) {
   }).join('');
 }
 
+function formatTime(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now - date;
+
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return date.toLocaleDateString();
+}
+
 async function loadStats() {
   try {
     const res = await fetch('/api/stats');
@@ -160,6 +180,22 @@ async function loadStats() {
     document.getElementById('goal-fill').style.width = `${Math.min(percentage, 100)}%`;
     document.getElementById('progress').textContent = data.progress.toLocaleString();
 
+    // Update recent drinks
+    const recentDrinks = document.getElementById('recent-drinks');
+    if (data.recentDrinks && data.recentDrinks.length > 0) {
+      recentDrinks.innerHTML = data.recentDrinks.map(drink => `
+        <div class="recent-drink">
+          <div class="recent-drink-info">
+            <span class="recent-drink-user">${drink.username.toUpperCase()}</span>
+            <span class="recent-drink-beer">"${drink.beerType}"</span>
+          </div>
+          <div class="recent-drink-time">${formatTime(drink.timestamp)}</div>
+        </div>
+      `).join('');
+    } else {
+      recentDrinks.innerHTML = '<div class="recent-drink"><div class="recent-drink-info">No drinks yet!</div></div>';
+    }
+
     // Update leaderboard
     const leaderboard = document.getElementById('leaderboard');
     leaderboard.innerHTML = data.leaderboard.map((player, i) => {
@@ -169,11 +205,12 @@ async function loadStats() {
       else if (i === 2) rankClass = 'bronze';
 
       const isYou = currentUser && player.username === currentUser.username;
+      const adminTag = player.is_admin ? ' <span style="color:#ffd700;font-size:0.8em;">[ADMIN]</span>' : '';
 
       return `
         <div class="leaderboard-row" style="${isYou ? 'background: rgba(255, 107, 0, 0.2);' : ''}">
           <div class="leaderboard-rank ${rankClass}">#${i + 1}</div>
-          <div class="leaderboard-name">${player.username.toUpperCase()}${isYou ? ' (YOU)' : ''}</div>
+          <div class="leaderboard-name">${player.username.toUpperCase()}${adminTag}${isYou ? ' (YOU)' : ''}</div>
           <div class="leaderboard-score">${player.beer_count.toLocaleString()}</div>
         </div>
       `;
@@ -188,23 +225,63 @@ async function loadStats() {
 }
 
 async function drinkBeer() {
+  const beerType = document.getElementById('beer-type').value.trim();
+
+  if (!beerType) {
+    alert('Please enter what beer you\'re drinking!');
+    document.getElementById('beer-type').focus();
+    return;
+  }
+
   const btn = document.getElementById('drink-btn');
   btn.classList.add('drink-animation');
 
   try {
-    const res = await fetch('/api/drink', { method: 'POST' });
+    const res = await fetch('/api/drink', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ beerType })
+    });
     const data = await res.json();
 
     if (res.ok) {
       currentUser.beer_count = data.beer_count;
       document.getElementById('your-beers').textContent = data.beer_count;
+      document.getElementById('beer-type').value = '';
+
+      // Show AI roast if available
+      if (data.aiRoast) {
+        showRoast(data.aiRoast);
+      }
+
       loadStats();
+    } else {
+      alert(data.error || 'Failed to record drink');
     }
   } catch (err) {
     console.error('Failed to record drink', err);
   }
 
   setTimeout(() => btn.classList.remove('drink-animation'), 300);
+}
+
+function showRoast(roast) {
+  // Create roast popup
+  const popup = document.createElement('div');
+  popup.className = 'roast-popup';
+  popup.innerHTML = `
+    <div class="roast-content">
+      <div class="roast-icon">&#129312;</div>
+      <div class="roast-text">${roast}</div>
+    </div>
+  `;
+  document.body.appendChild(popup);
+
+  // Remove after 5 seconds
+  setTimeout(() => {
+    popup.classList.add('fade-out');
+    setTimeout(() => popup.remove(), 500);
+  }, 5000);
 }
 
 async function generateInvite() {
@@ -244,4 +321,9 @@ document.getElementById('login-password').addEventListener('keypress', (e) => {
 
 document.getElementById('reg-password').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') register();
+});
+
+// Allow Enter key to submit beer
+document.getElementById('beer-type').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') drinkBeer();
 });

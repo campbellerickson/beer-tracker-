@@ -279,10 +279,50 @@ body {
   letter-spacing: 3px;
 }
 
+/* Admin Badge */
+.admin-badge {
+  background: linear-gradient(135deg, var(--gold), #cc9900);
+  color: #000;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
 /* Drink Section */
 .drink-section {
   text-align: center;
   margin-bottom: 20px;
+}
+
+.beer-type-input {
+  margin-bottom: 20px;
+}
+
+.beer-type-input input {
+  width: 100%;
+  max-width: 400px;
+  padding: 15px 20px;
+  background: var(--bg-panel);
+  border: 3px solid #2a2a3e;
+  border-radius: 50px;
+  color: var(--text);
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+  text-align: center;
+  transition: border-color 0.3s ease;
+}
+
+.beer-type-input input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.beer-type-input input::placeholder {
+  color: var(--text-dim);
+  text-transform: uppercase;
 }
 
 .mega-drink-btn {
@@ -337,6 +377,75 @@ body {
   color: var(--secondary);
   font-weight: 700;
   text-shadow: 0 0 10px var(--secondary);
+}
+
+/* Recent Drinks */
+.recent-section {
+  background: var(--bg-panel);
+  border-radius: 15px;
+  border: 3px solid #2a2a3e;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.recent-header {
+  background: linear-gradient(135deg, #1a1a2e, #12121a);
+  padding: 15px 20px;
+  border-bottom: 2px solid var(--secondary);
+}
+
+.recent-header h2 {
+  color: var(--secondary);
+  letter-spacing: 4px;
+  font-size: 1.2rem;
+}
+
+.recent-drinks {
+  padding: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.recent-drink {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: var(--bg-dark);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.recent-drink:last-child {
+  margin-bottom: 0;
+}
+
+.recent-drink-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.recent-drink-user {
+  color: var(--primary);
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.recent-drink-user.is-admin::after {
+  content: " [ADMIN]";
+  color: var(--gold);
+  font-size: 0.8em;
+}
+
+.recent-drink-beer {
+  color: var(--text);
+  font-style: italic;
+}
+
+.recent-drink-time {
+  color: var(--text-dim);
+  font-size: 0.9rem;
 }
 
 /* Leaderboard */
@@ -495,6 +604,64 @@ body {
 .leaderboard-table::-webkit-scrollbar-thumb {
   background: var(--primary);
   border-radius: 4px;
+}
+
+/* AI Roast Popup */
+.roast-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000;
+  animation: roastIn 0.3s ease;
+}
+
+.roast-content {
+  background: linear-gradient(135deg, #1a1a2e, #0d0d15);
+  border: 3px solid var(--gold);
+  border-radius: 20px;
+  padding: 30px 40px;
+  max-width: 500px;
+  text-align: center;
+  box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+}
+
+.roast-icon {
+  font-size: 4rem;
+  margin-bottom: 15px;
+}
+
+.roast-text {
+  font-size: 1.3rem;
+  color: var(--text);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+@keyframes roastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.roast-popup.fade-out {
+  animation: roastOut 0.5s ease forwards;
+}
+
+@keyframes roastOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
 }
 
 /* Responsive */

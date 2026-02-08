@@ -2,10 +2,41 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const OpenAI = require('openai');
 const db = require('./database');
 
 const app = express();
 const PORT = 3000;
+
+// OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+// Generate a snarky AI roast
+async function generateRoast(username, beerType, beerCount, remaining) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a snarky bartender AI. Generate a SHORT (1-2 sentences max) funny, roast-style comment about someone logging a beer. Be playful and teasing but not mean. Include the beer type and/or their drink count in the joke. Keep it PG-13.'
+        },
+        {
+          role: 'user',
+          content: `${username} just logged their beer #${beerCount}: "${beerType}". There are ${remaining.toLocaleString()} beers left until the group hits 1 million. Roast them!`
+        }
+      ],
+      max_tokens: 100,
+      temperature: 0.9
+    });
+    return response.choices[0].message.content;
+  } catch (err) {
+    console.error('OpenAI error:', err.message);
+    return null;
+  }
+}
 
 app.use(express.json());
 app.use(cookieParser());
@@ -31,7 +62,8 @@ function authenticate(req, res, next) {
   req.user = {
     id: user.id,
     username: user.username,
-    beer_count: user.beerCount
+    beer_count: user.beerCount,
+    is_admin: user.isAdmin || false
   };
   next();
 }
@@ -66,12 +98,13 @@ app.post('/api/register', (req, res) => {
   const sessionToken = uuidv4();
 
   try {
-    db.createUser(userId, username, password);
-    db.useInvite(inviteCode, userId);
+    // Use invite and check if it grants admin
+    const isAdmin = db.useInvite(inviteCode, userId);
+    db.createUser(userId, username, password, isAdmin);
     db.createSession(sessionToken, userId);
 
     res.cookie('session', sessionToken, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
-    res.json({ success: true, user: { id: userId, username, beer_count: 0 } });
+    res.json({ success: true, user: { id: userId, username, beer_count: 0, is_admin: isAdmin } });
   } catch (err) {
     res.status(500).json({ error: 'Registration failed' });
   }
@@ -92,7 +125,7 @@ app.post('/api/login', (req, res) => {
   res.cookie('session', sessionToken, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
   res.json({
     success: true,
-    user: { id: user.id, username: user.username, beer_count: user.beerCount }
+    user: { id: user.id, username: user.username, beer_count: user.beerCount, is_admin: user.isAdmin || false }
   });
 });
 
@@ -111,22 +144,40 @@ app.get('/api/me', authenticate, (req, res) => {
   res.json({ user: req.user });
 });
 
-// Record a beer
-app.post('/api/drink', authenticate, (req, res) => {
-  const newCount = db.incrementBeerCount(req.user.id);
-  res.json({ success: true, beer_count: newCount });
+// Record a beer with type
+app.post('/api/drink', authenticate, async (req, res) => {
+  const { beerType } = req.body;
+
+  if (!beerType || !beerType.trim()) {
+    return res.status(400).json({ error: 'Beer type is required' });
+  }
+
+  const newCount = db.recordDrink(req.user.id, req.user.username, beerType.trim());
+  const totalBeers = db.getTotalBeers();
+  const remaining = Math.max(0, 1000000 - totalBeers);
+
+  // Generate AI roast
+  const aiRoast = await generateRoast(req.user.username, beerType.trim(), newCount, remaining);
+
+  res.json({ success: true, beer_count: newCount, aiRoast });
 });
 
 // Get leaderboard and stats
 app.get('/api/stats', (req, res) => {
   const leaderboard = db.getLeaderboard();
   const totalUserBeers = db.getTotalBeers();
+  const recentDrinks = db.getRecentDrinks(10);
 
   const remaining = Math.max(0, 1000000 - totalUserBeers);
   const progress = totalUserBeers;
 
   res.json({
-    leaderboard: leaderboard.map(u => ({ username: u.username, beer_count: u.beerCount })),
+    leaderboard: leaderboard.map(u => ({
+      username: u.username,
+      beer_count: u.beerCount,
+      is_admin: u.isAdmin || false
+    })),
+    recentDrinks,
     remaining,
     progress,
     goal: 1000000
