@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BEER TRACKER - 1,000,000 GOAL</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="screen">
+      <div class="auth-container">
+        <div class="scoreboard-header">
+          <h1 class="neon-title">MILLION BEER<br>CHALLENGE</h1>
+          <div class="goal-badge">GOAL: 1,000,000</div>
+        </div>
+
+        <div id="login-form" class="auth-form">
+          <h2>PLAYER LOGIN</h2>
+          <input type="text" id="login-username" placeholder="USERNAME" autocomplete="username">
+          <input type="password" id="login-password" placeholder="PASSWORD" autocomplete="current-password">
+          <button onclick="login()" class="btn-primary">ENTER ARENA</button>
+          <p class="switch-text">Got an invite? <a href="#" onclick="showRegister()">Join the team</a></p>
+        </div>
+
+        <div id="register-form" class="auth-form hidden">
+          <h2>JOIN THE TEAM</h2>
+          <input type="text" id="invite-code" placeholder="INVITE CODE">
+          <input type="text" id="reg-username" placeholder="CHOOSE USERNAME" autocomplete="username">
+          <input type="password" id="reg-password" placeholder="CHOOSE PASSWORD" autocomplete="new-password">
+          <button onclick="register()" class="btn-primary">JOIN CHALLENGE</button>
+          <p class="switch-text">Already a player? <a href="#" onclick="showLogin()">Login</a></p>
+        </div>
+
+        <div id="auth-error" class="error-msg hidden"></div>
+      </div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboard-screen" class="screen hidden">
+      <header class="dashboard-header">
+        <div class="team-info">
+          <span class="player-icon">&#127866;</span>
+          <span id="player-name">PLAYER</span>
+        </div>
+        <div class="header-actions">
+          <button onclick="generateInvite()" class="btn-invite">+ INVITE</button>
+          <button onclick="logout()" class="btn-logout">LOGOUT</button>
+        </div>
+      </header>
+
+      <main class="scoreboard-main">
+        <!-- Giant Counter -->
+        <section class="counter-section">
+          <div class="counter-label">BEERS REMAINING</div>
+          <div class="mega-counter" id="mega-counter">
+            <span class="digit">0</span>
+            <span class="digit">0</span>
+            <span class="digit">0</span>
+            <span class="digit">,</span>
+            <span class="digit">0</span>
+            <span class="digit">0</span>
+            <span class="digit">0</span>
+          </div>
+          <div class="goal-tracker">
+            <div class="goal-bar">
+              <div class="goal-fill" id="goal-fill"></div>
+            </div>
+            <div class="goal-text">
+              <span id="progress">0</span> BEERS DRANK!
+            </div>
+          </div>
+        </section>
+
+        <!-- Big Drink Button -->
+        <section class="drink-section">
+          <button id="drink-btn" onclick="drinkBeer()" class="mega-drink-btn">
+            <span class="beer-icon">&#127866;</span>
+            <span class="drink-text">DRINK!</span>
+          </button>
+          <div class="your-count">
+            YOUR BEERS: <span id="your-beers">0</span>
+          </div>
+        </section>
+
+        <!-- Leaderboard -->
+        <section class="leaderboard-section">
+          <div class="leaderboard-header">
+            <h2>&#127942; LEADERBOARD &#127942;</h2>
+          </div>
+          <div class="leaderboard-table" id="leaderboard">
+            <!-- Populated by JS -->
+          </div>
+        </section>
+      </main>
+
+      <!-- Invite Modal -->
+      <div id="invite-modal" class="modal hidden">
+        <div class="modal-content">
+          <h3>INVITE A TEAMMATE</h3>
+          <p>Share this link:</p>
+          <input type="text" id="invite-link" readonly>
+          <button onclick="copyInvite()" class="btn-primary">COPY LINK</button>
+          <button onclick="closeInviteModal()" class="btn-secondary">CLOSE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,527 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-dark: #0a0a0f;
+  --bg-panel: #12121a;
+  --primary: #ff6b00;
+  --primary-glow: #ff8c33;
+  --secondary: #00ff88;
+  --gold: #ffd700;
+  --silver: #c0c0c0;
+  --bronze: #cd7f32;
+  --text: #ffffff;
+  --text-dim: #888899;
+  --red: #ff3333;
+  --led-off: #1a1a2e;
+}
+
+body {
+  font-family: 'Oswald', sans-serif;
+  background: var(--bg-dark);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Auth Screen */
+.auth-container {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.scoreboard-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.neon-title {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-shadow:
+    0 0 10px var(--primary),
+    0 0 20px var(--primary),
+    0 0 40px var(--primary-glow);
+  letter-spacing: 4px;
+  line-height: 1.2;
+}
+
+.goal-badge {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 10px 30px;
+  background: linear-gradient(135deg, var(--secondary), #00cc6a);
+  color: #000;
+  font-weight: 700;
+  font-size: 1.2rem;
+  border-radius: 50px;
+  letter-spacing: 2px;
+}
+
+.auth-form {
+  background: var(--bg-panel);
+  padding: 30px;
+  border-radius: 10px;
+  border: 2px solid #2a2a3e;
+}
+
+.auth-form h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  color: var(--primary);
+  letter-spacing: 3px;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 15px;
+  margin-bottom: 15px;
+  background: var(--bg-dark);
+  border: 2px solid #2a2a3e;
+  border-radius: 5px;
+  color: var(--text);
+  font-family: 'Oswald', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.auth-form input::placeholder {
+  color: var(--text-dim);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, var(--primary), #cc5500);
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 20px var(--primary);
+}
+
+.switch-text {
+  text-align: center;
+  margin-top: 20px;
+  color: var(--text-dim);
+}
+
+.switch-text a {
+  color: var(--secondary);
+  text-decoration: none;
+}
+
+.error-msg {
+  margin-top: 15px;
+  padding: 15px;
+  background: rgba(255, 51, 51, 0.2);
+  border: 1px solid var(--red);
+  border-radius: 5px;
+  color: var(--red);
+  text-align: center;
+}
+
+/* Dashboard */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: var(--bg-panel);
+  border-bottom: 3px solid var(--primary);
+}
+
+.team-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.player-icon {
+  font-size: 1.5rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-invite, .btn-logout {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-invite {
+  background: var(--secondary);
+  color: #000;
+}
+
+.btn-logout {
+  background: #333;
+  color: var(--text);
+}
+
+.scoreboard-main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Counter Section */
+.counter-section {
+  text-align: center;
+  padding: 40px 20px;
+  background: var(--bg-panel);
+  border-radius: 15px;
+  margin-bottom: 20px;
+  border: 3px solid #2a2a3e;
+}
+
+.counter-label {
+  font-size: 1.5rem;
+  color: var(--text-dim);
+  letter-spacing: 5px;
+  margin-bottom: 20px;
+}
+
+.mega-counter {
+  font-family: 'Roboto Mono', monospace;
+  font-size: clamp(3rem, 12vw, 6rem);
+  font-weight: 700;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.digit {
+  display: inline-block;
+  background: linear-gradient(180deg, #1a1a2e 0%, #0d0d15 100%);
+  padding: 10px 15px;
+  border-radius: 8px;
+  color: var(--secondary);
+  text-shadow:
+    0 0 10px var(--secondary),
+    0 0 20px var(--secondary);
+  border: 2px solid #2a2a3e;
+  min-width: 50px;
+}
+
+.digit:nth-child(4) {
+  background: none;
+  border: none;
+  padding: 10px 5px;
+  min-width: auto;
+  color: var(--text-dim);
+  text-shadow: none;
+}
+
+.goal-tracker {
+  margin-top: 30px;
+}
+
+.goal-bar {
+  height: 30px;
+  background: var(--led-off);
+  border-radius: 15px;
+  overflow: hidden;
+  border: 2px solid #2a2a3e;
+}
+
+.goal-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  width: 0%;
+  transition: width 0.5s ease;
+  border-radius: 15px;
+}
+
+.goal-text {
+  margin-top: 15px;
+  font-size: 1.5rem;
+  color: var(--primary);
+  letter-spacing: 3px;
+}
+
+/* Drink Section */
+.drink-section {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.mega-drink-btn {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--primary), #cc4400);
+  border: 5px solid var(--primary-glow);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow:
+    0 0 30px rgba(255, 107, 0, 0.5),
+    inset 0 -5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.mega-drink-btn:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 50px rgba(255, 107, 0, 0.7),
+    inset 0 -5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.mega-drink-btn:active {
+  transform: scale(0.95);
+}
+
+.mega-drink-btn .beer-icon {
+  font-size: 4rem;
+}
+
+.mega-drink-btn .drink-text {
+  font-family: 'Oswald', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 5px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.your-count {
+  margin-top: 20px;
+  font-size: 1.5rem;
+  color: var(--text);
+  letter-spacing: 3px;
+}
+
+.your-count span {
+  color: var(--secondary);
+  font-weight: 700;
+  text-shadow: 0 0 10px var(--secondary);
+}
+
+/* Leaderboard */
+.leaderboard-section {
+  background: var(--bg-panel);
+  border-radius: 15px;
+  border: 3px solid #2a2a3e;
+  overflow: hidden;
+}
+
+.leaderboard-header {
+  background: linear-gradient(135deg, #1a1a2e, #12121a);
+  padding: 20px;
+  text-align: center;
+  border-bottom: 2px solid var(--primary);
+}
+
+.leaderboard-header h2 {
+  color: var(--gold);
+  letter-spacing: 5px;
+  font-size: 1.5rem;
+}
+
+.leaderboard-table {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.leaderboard-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #2a2a3e;
+  transition: background 0.2s ease;
+}
+
+.leaderboard-row:hover {
+  background: rgba(255, 107, 0, 0.1);
+}
+
+.leaderboard-rank {
+  width: 50px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.leaderboard-rank.gold { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+.leaderboard-rank.silver { color: var(--silver); }
+.leaderboard-rank.bronze { color: var(--bronze); }
+
+.leaderboard-name {
+  flex: 1;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+  margin-left: 10px;
+}
+
+.leaderboard-score {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--bg-panel);
+  padding: 30px;
+  border-radius: 15px;
+  border: 2px solid var(--primary);
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.modal-content h3 {
+  color: var(--primary);
+  margin-bottom: 20px;
+  letter-spacing: 3px;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 15px;
+  margin: 15px 0;
+  background: var(--bg-dark);
+  border: 2px solid #2a2a3e;
+  border-radius: 5px;
+  color: var(--text);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.9rem;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 15px;
+  margin-top: 10px;
+  background: #333;
+  border: none;
+  border-radius: 5px;
+  color: var(--text);
+  font-family: 'Oswald', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.mega-drink-btn {
+  animation: pulse 2s infinite;
+}
+
+.mega-drink-btn:hover {
+  animation: none;
+}
+
+/* Drink animation */
+@keyframes drinkPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.drink-animation {
+  animation: drinkPop 0.3s ease;
+}
+
+/* Scrollbar */
+.leaderboard-table::-webkit-scrollbar {
+  width: 8px;
+}
+
+.leaderboard-table::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+
+.leaderboard-table::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .neon-title {
+    font-size: 2rem;
+  }
+
+  .mega-counter {
+    font-size: 2.5rem;
+  }
+
+  .digit {
+    padding: 8px 10px;
+    min-width: 35px;
+  }
+
+  .mega-drink-btn {
+    width: 150px;
+    height: 150px;
+  }
+
+  .mega-drink-btn .beer-icon {
+    font-size: 3rem;
+  }
+
+  .mega-drink-btn .drink-text {
+    font-size: 1.5rem;
+  }
+}
