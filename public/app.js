@@ -224,6 +224,42 @@ async function loadStats() {
   }
 }
 
+let selectedPhoto = null;
+
+function handlePhotoSelect(input) {
+  const file = input.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      selectedPhoto = e.target.result;
+      document.getElementById('preview-img').src = selectedPhoto;
+      document.getElementById('photo-preview').classList.remove('hidden');
+      document.getElementById('photo-icon').textContent = '✓';
+      document.getElementById('photo-text').textContent = 'PHOTO READY';
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function clearPhoto() {
+  selectedPhoto = null;
+  document.getElementById('beer-photo').value = '';
+  document.getElementById('photo-preview').classList.add('hidden');
+  document.getElementById('photo-icon').textContent = '📷';
+  document.getElementById('photo-text').textContent = 'SNAP YOUR BEER';
+}
+
+function showVerificationStatus(status, message) {
+  const statusEl = document.getElementById('verification-status');
+  statusEl.className = 'verification-status ' + status;
+  statusEl.textContent = message;
+  statusEl.classList.remove('hidden');
+}
+
+function hideVerificationStatus() {
+  document.getElementById('verification-status').classList.add('hidden');
+}
+
 async function drinkBeer() {
   const beerType = document.getElementById('beer-type').value.trim();
 
@@ -233,35 +269,55 @@ async function drinkBeer() {
     return;
   }
 
+  if (!selectedPhoto) {
+    alert('Please take a photo of your beer for verification!');
+    return;
+  }
+
   const btn = document.getElementById('drink-btn');
   btn.classList.add('drink-animation');
+  btn.disabled = true;
+
+  showVerificationStatus('verifying', 'AI IS VERIFYING YOUR BEER...');
 
   try {
     const res = await fetch('/api/drink', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ beerType })
+      body: JSON.stringify({ beerType, photo: selectedPhoto })
     });
     const data = await res.json();
 
     if (res.ok) {
-      currentUser.beer_count = data.beer_count;
-      document.getElementById('your-beers').textContent = data.beer_count;
-      document.getElementById('beer-type').value = '';
+      if (data.verified) {
+        showVerificationStatus('success', 'BEER VERIFIED! ' + (data.verificationMessage || ''));
+        currentUser.beer_count = data.beer_count;
+        document.getElementById('your-beers').textContent = data.beer_count;
+        document.getElementById('beer-type').value = '';
+        clearPhoto();
 
-      // Show AI roast if available
-      if (data.aiRoast) {
-        showRoast(data.aiRoast);
+        // Show AI roast if available
+        if (data.aiRoast) {
+          setTimeout(() => showRoast(data.aiRoast), 1500);
+        }
+
+        loadStats();
+        setTimeout(hideVerificationStatus, 3000);
+      } else {
+        showVerificationStatus('failed', data.verificationMessage || 'NOT A BEER! NICE TRY.');
+        setTimeout(hideVerificationStatus, 5000);
       }
-
-      loadStats();
     } else {
-      alert(data.error || 'Failed to record drink');
+      showVerificationStatus('failed', data.error || 'Failed to verify');
+      setTimeout(hideVerificationStatus, 5000);
     }
   } catch (err) {
     console.error('Failed to record drink', err);
+    showVerificationStatus('failed', 'ERROR VERIFYING');
+    setTimeout(hideVerificationStatus, 3000);
   }
 
+  btn.disabled = false;
   setTimeout(() => btn.classList.remove('drink-animation'), 300);
 }
 

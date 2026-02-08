@@ -325,6 +325,93 @@ body {
   text-transform: uppercase;
 }
 
+/* Photo Upload */
+.photo-upload {
+  margin-bottom: 20px;
+}
+
+.photo-upload input[type="file"] {
+  display: none;
+}
+
+.photo-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 30px;
+  background: var(--bg-panel);
+  border: 3px dashed var(--secondary);
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+  color: var(--secondary);
+}
+
+.photo-label:hover {
+  background: rgba(0, 255, 136, 0.1);
+  border-style: solid;
+}
+
+.photo-label span:first-child {
+  font-size: 1.5rem;
+}
+
+.photo-preview {
+  margin-top: 15px;
+  position: relative;
+  display: inline-block;
+}
+
+.photo-preview img {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 10px;
+  border: 3px solid var(--secondary);
+}
+
+.clear-photo {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--red);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.verification-status {
+  margin: 15px 0;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.verification-status.verifying {
+  background: rgba(255, 215, 0, 0.2);
+  border: 2px solid var(--gold);
+  color: var(--gold);
+}
+
+.verification-status.success {
+  background: rgba(0, 255, 136, 0.2);
+  border: 2px solid var(--secondary);
+  color: var(--secondary);
+}
+
+.verification-status.failed {
+  background: rgba(255, 51, 51, 0.2);
+  border: 2px solid var(--red);
+  color: var(--red);
+}
+
 .mega-drink-btn {
   width: 200px;
   height: 200px;

@@ -13,6 +13,51 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+// Verify beer photo with GPT-4 Vision
+async function verifyBeerPhoto(photoBase64, claimedBeerType) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a beer verification AI. Your job is to look at photos and determine if they show a beer/alcoholic beverage. Be somewhat lenient - if it looks like any kind of beer, cider, or alcoholic drink, approve it. Respond with JSON: {"isBeer": true/false, "message": "short funny comment about what you see"}'
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `The user claims this is a "${claimedBeerType}". Is this actually a beer or alcoholic beverage? Be fun about it!`
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: photoBase64
+              }
+            }
+          ]
+        }
+      ],
+      max_tokens: 150
+    });
+
+    const content = response.choices[0].message.content;
+    // Try to parse JSON from the response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    // Fallback: if it mentions beer positively, approve
+    const isBeer = content.toLowerCase().includes('yes') || content.toLowerCase().includes('beer') && !content.toLowerCase().includes('not');
+    return { isBeer, message: content };
+  } catch (err) {
+    console.error('Vision API error:', err.message);
+    // On error, be lenient and allow it
+    return { isBeer: true, message: "Couldn't verify but I trust you!" };
+  }
+}
+
 // Generate a snarky AI roast
 async function generateRoast(username, beerType, beerCount, remaining) {
   try {
@@ -38,7 +83,7 @@ async function generateRoast(username, beerType, beerCount, remaining) {
   }
 }
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -144,12 +189,27 @@ app.get('/api/me', authenticate, (req, res) => {
   res.json({ user: req.user });
 });
 
-// Record a beer with type
+// Record a beer with type and photo verification
 app.post('/api/drink', authenticate, async (req, res) => {
-  const { beerType } = req.body;
+  const { beerType, photo } = req.body;
 
   if (!beerType || !beerType.trim()) {
     return res.status(400).json({ error: 'Beer type is required' });
+  }
+
+  if (!photo) {
+    return res.status(400).json({ error: 'Photo is required for verification' });
+  }
+
+  // Verify the photo is actually a beer
+  const verification = await verifyBeerPhoto(photo, beerType.trim());
+
+  if (!verification.isBeer) {
+    return res.json({
+      success: false,
+      verified: false,
+      verificationMessage: verification.message || "That doesn't look like a beer!"
+    });
   }
 
   const newCount = db.recordDrink(req.user.id, req.user.username, beerType.trim());
@@ -159,7 +219,13 @@ app.post('/api/drink', authenticate, async (req, res) => {
   // Generate AI roast
   const aiRoast = await generateRoast(req.user.username, beerType.trim(), newCount, remaining);
 
-  res.json({ success: true, beer_count: newCount, aiRoast });
+  res.json({
+    success: true,
+    verified: true,
+    verificationMessage: verification.message,
+    beer_count: newCount,
+    aiRoast
+  });
 });
 
 // Get leaderboard and stats

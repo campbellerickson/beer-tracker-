@@ -75,15 +75,27 @@
           </div>
         </section>
 
-        <!-- Drink Section with Beer Type -->
+        <!-- Drink Section with Beer Type and Photo -->
         <section class="drink-section">
           <div class="beer-type-input">
             <input type="text" id="beer-type" placeholder="WHAT BEER? (e.g. IPA, Lager, Stout)" maxlength="50">
+          </div>
+          <div class="photo-upload">
+            <label for="beer-photo" class="photo-label">
+              <span id="photo-icon">&#128247;</span>
+              <span id="photo-text">SNAP YOUR BEER</span>
+            </label>
+            <input type="file" id="beer-photo" accept="image/*" capture="environment" onchange="handlePhotoSelect(this)">
+            <div id="photo-preview" class="photo-preview hidden">
+              <img id="preview-img" src="" alt="Beer preview">
+              <button onclick="clearPhoto()" class="clear-photo">X</button>
+            </div>
           </div>
           <button id="drink-btn" onclick="drinkBeer()" class="mega-drink-btn">
             <span class="beer-icon">&#127866;</span>
             <span class="drink-text">DRINK!</span>
           </button>
+          <div id="verification-status" class="verification-status hidden"></div>
           <div class="your-count">
             YOUR BEERS: <span id="your-beers">0</span>
           </div>
