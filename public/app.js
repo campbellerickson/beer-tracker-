@@ -686,6 +686,8 @@ document.getElementById('chat-input')?.addEventListener('keypress', (e) => {
 });
 
 // Drunk AI Functions
+let drunkAIHistory = [];
+
 function openDrunkAI() {
   document.getElementById('drunk-ai-modal').classList.remove('hidden');
   document.getElementById('drunk-ai-input').focus();
@@ -695,6 +697,15 @@ function closeDrunkAI() {
   document.getElementById('drunk-ai-modal').classList.add('hidden');
 }
 
+function resetDrunkAIChat() {
+  drunkAIHistory = [];
+  document.getElementById('drunk-ai-messages').innerHTML = `
+    <div class="drunk-ai-msg ai">
+      <p>*burp* heyyy buddy!! whatcha wanna talk about?? I just did like 10 molsons eh and this mountain air is HITTING different 🍺🏔️</p>
+    </div>
+  `;
+}
+
 async function sendDrunkAIMessage() {
   const input = document.getElementById('drunk-ai-input');
   const message = input.value.trim();
@@ -702,8 +713,10 @@ async function sendDrunkAIMessage() {
 
   const messagesDiv = document.getElementById('drunk-ai-messages');
 
-  // Add user message
+  // Add user message to UI and history
   messagesDiv.innerHTML += `<div class="drunk-ai-msg user"><p>${escapeHtml(message)}</p></div>`;
+  drunkAIHistory.push({ role: 'user', content: message });
+
   input.value = '';
   input.disabled = true;
 
@@ -715,16 +728,21 @@ async function sendDrunkAIMessage() {
     const res = await fetch('/api/drunk-ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message })
+      body: JSON.stringify({ message, history: drunkAIHistory.slice(0, -1) }) // Don't include current message in history
     });
     const data = await res.json();
 
     // Remove typing indicator and add response
     document.getElementById('typing-indicator')?.remove();
-    messagesDiv.innerHTML += `<div class="drunk-ai-msg ai"><p>${escapeHtml(data.reply)}</p></div>`;
+
+    const reply = data.reply || data.error || "*hic* sorry what??";
+    messagesDiv.innerHTML += `<div class="drunk-ai-msg ai"><p>${escapeHtml(reply)}</p></div>`;
+    drunkAIHistory.push({ role: 'assistant', content: reply });
   } catch (err) {
     document.getElementById('typing-indicator')?.remove();
-    messagesDiv.innerHTML += `<div class="drunk-ai-msg ai"><p>*falls off barstool* whoops haha sorry what?? 🍺</p></div>`;
+    const fallback = "*falls off barstool* whoops haha sorry what?? 🍺";
+    messagesDiv.innerHTML += `<div class="drunk-ai-msg ai"><p>${fallback}</p></div>`;
+    drunkAIHistory.push({ role: 'assistant', content: fallback });
   }
 
   input.disabled = false;

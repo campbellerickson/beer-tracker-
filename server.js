@@ -441,21 +441,20 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// Drunk AI Chat
+// Drunk AI Chat - with conversation history
 app.post('/api/drunk-ai', authenticate, async (req, res) => {
-  const { message } = req.body;
+  const { message, history } = req.body;
 
   if (!message || !message.trim()) {
     return res.status(400).json({ error: 'Message required' });
   }
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `You are DRUNK.AI - a hilariously drunk AI that just drank 10 Molson Canadian beers while skiing in Whistler, BC, Canada. You're feeling GREAT but definitely impaired.
+    // Build messages array with history
+    const messages = [
+      {
+        role: 'system',
+        content: `You are DRUNK.AI - a hilariously drunk AI that just drank 10 Molson Canadian beers while skiing in Whistler, BC, Canada. You're feeling GREAT but definitely impaired.
 
 Your personality:
 - You slur words occasionally (like "thiss" or "soooo")
@@ -471,20 +470,33 @@ Your personality:
 - Use emojis liberally 🍺🏔️🇨🇦❄️
 
 Remember: You're having the BEST time and want everyone to have fun too!`
-        },
-        {
-          role: 'user',
-          content: message.trim()
-        }
-      ],
+      }
+    ];
+
+    // Add conversation history if provided
+    if (history && Array.isArray(history)) {
+      history.slice(-10).forEach(msg => { // Keep last 10 messages
+        messages.push({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        });
+      });
+    }
+
+    // Add current message
+    messages.push({ role: 'user', content: message.trim() });
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages,
       max_tokens: 150,
       temperature: 1.0
     });
 
     res.json({ reply: response.choices[0].message.content });
   } catch (err) {
-    console.error('Drunk AI error:', err.message);
-    res.json({ reply: "*hic* sorry bud my brain just... what were we talking about? 🍺" });
+    console.error('Drunk AI error:', err.message, err);
+    res.status(500).json({ error: 'AI is too drunk right now', reply: "*hic* whoaaa the room is spinning... try again in a sec bud 🍺" });
   }
 });
 
